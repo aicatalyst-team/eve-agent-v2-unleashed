@@ -54,7 +54,7 @@ Eve's portrait reflects her emotional state based on conversation sentiment:
 | **Web Search** | Live Tavily search injected into agent context |
 | **API Key UI** | Enter Ollama/Tavily keys directly in the browser — no shell required |
 | **PowerShell-Aware** | Bash tool uses PowerShell syntax on Windows automatically |
-| **One-Click Windows Launch** | `eve-terminal.bat` starts server + opens browser; `eve-unleashed.bat` opens lightweight command terminal |
+| **One-Click Windows Launch** | `eve-terminal.bat` launches the Eve V2U Unleashed web server + opens browser; `eve-unleashed.bat` opens lightweight command terminal |
 
 ---
 
@@ -154,11 +154,11 @@ See the [Configuration Reference](#configuration-reference) below.
 
 ### 7. Launch
 
-**Windows — double-click (web UI):**
+**Windows — double-click (Eve V2U Unleashed web UI):**
 ```
 eve-terminal.bat
 ```
-Starts the server and opens [http://localhost:7777](http://localhost:7777) in your browser.
+Launches the Eve V2 Unleashed web server and opens [http://localhost:7777](http://localhost:7777) in your browser.
 
 **Windows — lightweight command terminal:**
 ```
