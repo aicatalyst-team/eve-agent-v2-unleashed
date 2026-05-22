@@ -303,6 +303,7 @@ Copy `.env.example` to `.env` and set what you need:
 | `EVE_ASSETS_DIR` | `web/assets/` | Custom avatar sprite directory |
 | `EVE_OWNER_USERNAME` | *(empty)* | Username granted owner-level access |
 | `EVE_PERSONA_PATH` | *(auto)* | Path to a custom Eve persona file |
+| `EVE_SYSTEM_PROMPT_PATH` | *(empty)* | Path to a .md/.txt file with custom system prompt prepended
 
 ---
 
