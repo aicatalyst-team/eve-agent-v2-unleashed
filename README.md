@@ -71,10 +71,39 @@ ollama pull jeffgreen311/eve-qwen3.5-4b-S0LF0RG3:latest
 ```bash
 git clone https://github.com/JeffGreen311/eve-agent-v2-unleashed.git
 cd eve-agent-v2-unleashed
-python -m venv venv && venv\Scripts\activate   # Windows
-# source venv/bin/activate                     # Linux/macOS
+```
+
+<details>
+<summary><b>Windows</b></summary>
+
+```powershell
+python -m venv venv
+venv\Scripts\activate
 pip install fastapi uvicorn ollama httpx pydantic-settings python-dotenv aiohttp rich psutil pyyaml
 ```
+</details>
+
+<details>
+<summary><b>Linux</b></summary>
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install fastapi uvicorn ollama httpx pydantic-settings python-dotenv aiohttp rich psutil pyyaml
+```
+</details>
+
+<details>
+<summary><b>macOS</b></summary>
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install fastapi uvicorn ollama httpx pydantic-settings python-dotenv aiohttp rich psutil pyyaml
+```
+
+> **Apple Silicon:** Eve automatically benefits from Metal GPU acceleration via Ollama. No additional setup needed.
+</details>
 
 ### 3 — Launch
 
