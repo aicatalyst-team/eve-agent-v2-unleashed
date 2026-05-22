@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ollama-coder"
+version = "0.2.3"
+description = "Agentic coding assistant for Ollama - Claude Code alternative"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = ["ollama>=0.4.0"]
+license = "MIT"
+authors = [{name = "Lalo Morales"}]
+keywords = ["ollama", "cli", "agent", "coding-assistant", "ai", "llm", "autonomous"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only"
+]
+
+[project.optional-dependencies]
+rich = ["rich>=13.0.0"]
+
+[project.urls]
+Homepage = "https://github.com/lalomorales22/ollama-coder"
+Repository = "https://github.com/lalomorales22/ollama-coder"
+Issues = "https://github.com/lalomorales22/ollama-coder/issues"
+
+[project.scripts]
+ollama-coder = "ollama_coder.cli:main"
+
+[tool.setuptools]
+packages = ["ollama_coder"]
