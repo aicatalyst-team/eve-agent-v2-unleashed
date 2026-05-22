@@ -54,7 +54,7 @@ Eve's portrait reflects her emotional state based on conversation sentiment:
 | **Web Search** | Live Tavily search injected into agent context |
 | **API Key UI** | Enter Ollama/Tavily keys directly in the browser — no shell required |
 | **PowerShell-Aware** | Bash tool uses PowerShell syntax on Windows automatically |
-| **One-Click Windows Launch** | `eve-terminal.bat` starts server + opens browser |
+| **One-Click Windows Launch** | `eve-terminal.bat` starts server + opens browser; `eve-unleashed.bat` opens lightweight command terminal |
 
 ---
 
@@ -154,10 +154,17 @@ See the [Configuration Reference](#configuration-reference) below.
 
 ### 7. Launch
 
-**Windows — double-click:**
+**Windows — double-click (web UI):**
 ```
 eve-terminal.bat
 ```
+Starts the server and opens [http://localhost:7777](http://localhost:7777) in your browser.
+
+**Windows — lightweight command terminal:**
+```
+eve-unleashed.bat
+```
+Opens Eve directly in the command line — no web server, no browser. Runs `run.py` for a pure terminal experience.
 
 **Any platform — command line:**
 ```bash
@@ -244,7 +251,8 @@ eve-agent-v2-unleashed/
 │   └── skills/                # 273 skill modules
 ├── .env.example               # Configuration template
 ├── pyproject.toml             # Package metadata
-├── eve-terminal.bat           # Windows one-click launcher
+├── eve-terminal.bat           # Windows one-click launcher — starts server + opens browser
+├── eve-unleashed.bat          # Windows lightweight command terminal (no browser)
 └── LICENSE
 ```
 
