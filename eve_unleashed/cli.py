@@ -24,7 +24,11 @@ import sys
 import json
 import subprocess
 import argparse
-import readline
+try:
+    import readline
+    _READLINE = True
+except ImportError:
+    _READLINE = False  # not available on Windows
 import shlex
 import urllib.parse
 import urllib.request
@@ -2268,12 +2272,13 @@ class CLI:
             session_manager=self.session_manager
         )
         
-        # Setup readline for better input
+        # Setup readline for better input (Unix only)
         histfile = self.config.user_config_dir / "history"
-        try:
-            readline.read_history_file(histfile)
-        except FileNotFoundError:
-            pass
+        if _READLINE:
+            try:
+                readline.read_history_file(histfile)
+            except FileNotFoundError:
+                pass
         self.histfile = histfile
 
     def _build_ollama_client(self) -> ollama.Client:
@@ -2912,7 +2917,8 @@ class CLI:
                 
         finally:
             # Save history
-            readline.write_history_file(self.histfile)
+            if _READLINE:
+                readline.write_history_file(self.histfile)
     
     def run_headless(
         self,
