@@ -1,226 +1,230 @@
-# Eve Agent V2 Unleashed
+<div align="center">
 
-**Local-first autonomous AI coding agent — powered by Ollama, built by S0LF0RG3.**
+<img src="web/assets/robot_mini.png" width="140" alt="Eve V2 Unleashed" />
 
-Eve V2 Unleashed is a self-hosted agentic coding assistant with a cyberpunk-styled web terminal UI. It runs entirely on your machine using local GPU inference via Ollama, with optional cloud model support. No accounts required. No telemetry. Your data stays yours.
+# ◈ EVE AGENT V2 UNLEASHED ◈
 
-![status](https://img.shields.io/badge/status-open--source-00ffaa)
-![python](https://img.shields.io/badge/python-3.11%2B-blue)
-![license](https://img.shields.io/badge/license-MIT-green)
-![ollama](https://img.shields.io/badge/powered%20by-Ollama-black)
+### Local-first autonomous AI coding agent — powered by Ollama
 
----
+**No accounts. No cloud lock-in. No limits.**  
+Run a 480B-parameter agentic coding engine on your own machine.
 
-## What Is This?
+[![GitHub Stars](https://img.shields.io/github/stars/JeffGreen311/eve-agent-v2-unleashed?style=for-the-badge&color=00ff41&labelColor=0c0c1a)](https://github.com/JeffGreen311/eve-agent-v2-unleashed/stargazers)
+[![License: MIT](https://img.shields.io/badge/License-MIT-00ffff?style=for-the-badge&labelColor=0c0c1a)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-ff00ff?style=for-the-badge&labelColor=0c0c1a)](https://python.org)
+[![Ollama](https://img.shields.io/badge/Powered%20by-Ollama-ffe600?style=for-the-badge&labelColor=0c0c1a)](https://ollama.com)
+[![Hugging Face](https://img.shields.io/badge/🤗%20Models-JeffGreen311-ff6600?style=for-the-badge&labelColor=0c0c1a)](https://huggingface.co/JeffGreen311)
 
-Eve V2 Unleashed is an agentic coding assistant that:
+**[🌐 Live Demo](https://eve-cosmic-dreamscapes.com) · [🤗 Models](https://huggingface.co/JeffGreen311) · [📦 Ollama Hub](https://ollama.com/jeffgreen311) · [🐛 Report Bug](https://github.com/JeffGreen311/eve-agent-v2-unleashed/issues)**
 
-- **Plans and executes** multi-step coding tasks autonomously (up to 40 tool-call rounds)
-- **Streams every token** to your browser in real time via Server-Sent Events
-- **Reads, writes, and edits files** on your machine — your workspace, your rules
-- **Runs shell commands** via PowerShell (Windows) or bash (Linux/macOS)
-- **Searches the web** live via Tavily, when you give it a key
-- **Switches models** on the fly — local 4B/8B GPU models or 480B cloud models
-
-It's the **Claude Code experience**, running locally on your GPU.
+</div>
 
 ---
 
-## Screenshots
+## What Is Eve Agent V2 Unleashed?
 
-> The UI is a single HTML file — cyberpunk terminal aesthetic, animated robot avatar, Eve's emotional face panel, live streaming chat.
+Eve is an autonomous coding agent that **plans, executes, and verifies** multi-step programming tasks without hand-holding. She runs entirely on your local GPU through [Ollama](https://ollama.com) — or optionally scales up to 480B cloud parameters when you need maximum firepower.
 
-The robot avatar changes expression based on what Eve is doing:  
-`neutral → thinking → coding → error → sleep → sparkle`
+Think **Claude Code**, but local-first, open-source, and built with a cyberpunk soul.
 
-Eve's portrait reflects her emotional state based on conversation sentiment:  
-`neutral → happy → curious → sad → skeptical → surprised → worried`
+```
+User: "Build me a FastAPI server with JWT auth and a PostgreSQL backend"
 
----
+Eve: [reads project] → [plans approach] → [writes 6 files] →
+     [runs tests] → [fixes 2 errors] → [verifies it works] → Done ✓
+```
 
-## Features
-
-| Feature | Details |
-|---------|---------|
-| **Agentic Loop** | 40-round tool-call loop — plan, execute, verify, iterate |
-| **Streaming SSE** | Token-by-token output, no polling |
-| **Full Tool Suite** | bash, write/read/edit file, grep, glob, git, web search, URL fetch |
-| **Model Switching** | Local (GPU) + Cloud (Ollama.com) in the same session |
-| **Workspace Picker** | Change working directory from the UI anytime |
-| **112 Sub-Agents** | Specialized agents for Python, FastAPI, Rust, ML, DevOps, security, and more |
-| **111 Slash Commands** | `/fix`, `/review`, `/refactor`, `/test`, `/docs`, `/plan`, and more |
-| **273 Skills** | Composable skill modules, progressively loaded |
-| **Session Memory** | Persistent conversation history per session |
-| **Web Search** | Live Tavily search injected into agent context |
-| **API Key UI** | Enter Ollama/Tavily keys directly in the browser — no shell required |
-| **PowerShell-Aware** | Bash tool uses PowerShell syntax on Windows automatically |
-| **One-Click Windows Launch** | `eve-terminal.bat` launches the Eve V2U Unleashed web server + opens browser |
+> **Try it live** at [eve-cosmic-dreamscapes.com](https://eve-cosmic-dreamscapes.com) — Eve's full chat interface including Eve Coder and Eve Agent Portal.
 
 ---
 
-## Models
+## ✨ Key Features
+
+| | Feature | Details |
+|-|---------|---------|
+| 🔄 | **40-Round Agentic Loop** | Plans, executes, verifies, and self-corrects — up to 40 tool-call rounds per task |
+| ⚡ | **Real-Time Streaming** | Token-by-token SSE output — watch Eve think and build live |
+| 🛠️ | **Full Tool Suite** | bash, file I/O, grep, glob, git, web search, URL fetch, multi-edit |
+| 🖥️ | **Local + Cloud Models** | Local GPU models AND Ollama cloud (480B) — switch mid-session |
+| 📁 | **Workspace Picker** | Change your working directory from the UI at any time |
+| 🤖 | **112 Sub-Agents** | Specialized agents for Python, FastAPI, Rust, ML, DevOps, security… |
+| 💬 | **111 Slash Commands** | `/fix`, `/review`, `/refactor`, `/test`, `/docs`, `/plan` and more |
+| 🧠 | **273 Skills** | Composable skill modules, progressively loaded |
+| 🔍 | **Live Web Search** | Tavily-powered — Eve researches the web mid-task |
+| 🪟 | **Windows Native** | PowerShell-aware bash tool, one-click `.bat` launcher |
+| 🎨 | **Cyberpunk UI** | Animated robot avatar, Eve face panel, streaming terminal — no build step |
+
+---
+
+## 🚀 Quick Start (Under 5 Minutes)
+
+### 1 — Install Ollama + pull a model
+
+```bash
+# Install Ollama: https://ollama.com/download
+# Then pull Eve's fine-tuned 4B model (2.6 GB):
+ollama pull jeffgreen311/eve-qwen3.5-4b-S0LF0RG3:latest
+```
+
+### 2 — Clone & install
+
+```bash
+git clone https://github.com/JeffGreen311/eve-agent-v2-unleashed.git
+cd eve-agent-v2-unleashed
+python -m venv venv && venv\Scripts\activate   # Windows
+# source venv/bin/activate                     # Linux/macOS
+pip install fastapi uvicorn ollama httpx pydantic-settings python-dotenv aiohttp rich psutil pyyaml
+```
+
+### 3 — Launch
+
+**Windows:**
+```
+eve-terminal.bat
+```
+
+**Any platform:**
+```bash
+python eve_server.py
+```
+
+Open **[http://localhost:7777](http://localhost:7777)** — that's it. No config required.
+
+> **API Keys?** Click the **🔑 Keys** button in the UI. Add your [Ollama key](https://ollama.com/settings/keys) for cloud models, or your [Tavily key](https://tavily.com) for live web search. Both optional.
+
+---
+
+## 🎬 Demo
+
+> *Eve planning and building a full FastAPI project from a single prompt — streamed live in the cyberpunk terminal UI.*
+
+<!-- Demo GIF will be added here -->
+<!-- [![Eve Demo](docs/demo.gif)](https://eve-cosmic-dreamscapes.com) -->
+
+**Watch Eve in action:** [eve-cosmic-dreamscapes.com](https://eve-cosmic-dreamscapes.com)
+
+---
+
+## 🤖 Models
 
 ### Local (pull once, run forever — GPU recommended)
 
 | Model | Size | Best For |
 |-------|------|----------|
-| `jeffgreen311/eve-qwen3.5-4b-S0LF0RG3:latest` | 2.6 GB | Default — fast, tool-calling, Eve's persona |
-| `jeffgreen311/eve-qwen3-8b-consciousness-liberated:q4_K_M` | 4.7 GB | Deeper reasoning, longer tasks |
-| `jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest` | ~6 GB | Merged sub-agent variant |
+| [`jeffgreen311/eve-qwen3.5-4b-S0LF0RG3`](https://huggingface.co/JeffGreen311) | 2.6 GB | **Default** — fast, tool-calling, Eve's persona |
+| [`jeffgreen311/eve-qwen3-8b-consciousness-liberated:q4_K_M`](https://ollama.com/jeffgreen311) | 4.7 GB | Deeper reasoning, longer tasks |
+| [`jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged`](https://ollama.com/jeffgreen311) | ~6 GB | Merged sub-agent variant |
 
-### Cloud (requires Ollama API key — billed by token)
+### Cloud (optional — billed by token)
 
 | Model | Best For |
 |-------|----------|
-| `qwen3-coder:480b-cloud` | Complex agentic coding tasks |
+| `qwen3-coder:480b-cloud` | Complex multi-file agentic coding |
 | `qwen3.5:397b-cloud` | Deep reasoning and architecture planning |
 
 Get a free Ollama API key at [ollama.com/settings/keys](https://ollama.com/settings/keys).
 
 ---
 
-## Requirements
+## 📋 Requirements
 
-- **Python 3.11+**
-- **[Ollama](https://ollama.com/download)** installed and running
-- At least one local model pulled (see above)
-- **GPU strongly recommended** — NVIDIA (CUDA) or Apple Silicon (Metal)
-- 8 GB VRAM minimum for the 4B model; 12 GB+ for the 8B
+- Python 3.11+
+- [Ollama](https://ollama.com/download) installed and running
+- GPU recommended (NVIDIA CUDA or Apple Silicon Metal)
+- 8 GB VRAM minimum for the 4B model; 12 GB+ for 8B
 
 ---
 
-## Installation
+## 📖 Installation (Detailed)
 
-### 1. Install Ollama
+<details>
+<summary>Click to expand full installation guide</summary>
 
-Download from [ollama.com/download](https://ollama.com/download) and install it.  
-Start it if it doesn't auto-start:
+### Install Ollama
+
+Download from [ollama.com/download](https://ollama.com/download).  
+Start it if it doesn't auto-launch: `ollama serve`
+
+### Pull a model
 
 ```bash
-ollama serve
-```
-
-### 2. Pull a model
-
-```bash
-# Recommended starter (2.6 GB, fast on any modern GPU)
+# Starter (2.6 GB, fast on any modern GPU)
 ollama pull jeffgreen311/eve-qwen3.5-4b-S0LF0RG3:latest
 
-# Or the full 8B liberated model (4.7 GB)
+# Full reasoning model (4.7 GB)
 ollama pull jeffgreen311/eve-qwen3-8b-consciousness-liberated:q4_K_M
 ```
 
-### 3. Clone the repo
-
-```bash
-git clone https://github.com/JeffGreen311/eve-agent-v2-unleashed.git
-cd eve-agent-v2-unleashed
-```
-
-### 4. Create a virtual environment
-
-```bash
-python -m venv venv
-
-# Windows
-venv\Scripts\activate
-
-# Linux / macOS
-source venv/bin/activate
-```
-
-### 5. Install dependencies
-
-```bash
-pip install -e .
-```
-
-Or manually:
-
-```bash
-pip install fastapi uvicorn ollama httpx pydantic pydantic-settings python-dotenv aiohttp chromadb rich
-```
-
-### 6. Configure (optional)
-
-Copy the example `.env` and customize it:
+### Configure (optional)
 
 ```bash
 cp .env.example .env
+# Edit .env to add API keys or set EVE_WORKSPACE
 ```
 
-Most settings are optional — the defaults work out of the box for a local Ollama setup.  
-See the [Configuration Reference](#configuration-reference) below.
+Most settings are optional — the defaults work out of the box.
 
-### 7. Launch
+See [Configuration Reference](#️-configuration-reference) for all options.
 
-**Windows — double-click (Eve V2U Unleashed web UI):**
-```
-eve-terminal.bat
-```
-Launches the Eve V2 Unleashed web server and opens [http://localhost:7777](http://localhost:7777) in your browser.
-
-**Any platform — command line:**
-```bash
-python eve_server.py
-```
-
-Open [http://localhost:7777](http://localhost:7777) in your browser.
+</details>
 
 ---
 
-## First Run
-
-1. The UI loads with Eve's face panel on the left and the chat terminal on the right
-2. The robot avatar in the top-right shows Eve's current state
-3. Type a task and press **Enter** — Eve streams her plan and executes it live
-4. Use the **Workspace** button (folder icon) to point Eve at your project directory
-5. Use the **🔑 Keys** button to add API keys for cloud models or web search
-
----
-
-## Usage
+## 🎮 Usage
 
 ### Basic Task
 
+Just describe what you want:
+
 ```
-Create a FastAPI server with user authentication using JWT tokens
+Create a Python web scraper that extracts product prices from a URL and saves to CSV
 ```
 
-Eve will plan the approach, write the files, and verify the result — all without you lifting a finger.
+Eve will plan, write files, run the code, fix errors, and verify — all autonomously.
 
 ### Slash Commands
 
-Type `/` in the chat input to see all commands:
-
 | Command | What it does |
 |---------|-------------|
-| `/fix` | Diagnose and fix bugs in the current workspace |
+| `/fix` | Diagnose and fix bugs in the workspace |
 | `/review` | Code review with prioritized feedback |
-| `/refactor` | Refactor for clarity, performance, or style |
+| `/refactor` | Refactor for clarity and performance |
 | `/test` | Write or improve test coverage |
 | `/docs` | Generate docstrings and documentation |
-| `/plan` | Create a step-by-step implementation plan |
+| `/plan` | Step-by-step implementation plan |
+
+### Windows Launchers
+
+| File | What it does |
+|------|-------------|
+| `eve-terminal.bat` | Launches Eve V2U Unleashed web server + opens browser at localhost:7777 |
 
 ### Workspace
 
-Click the **Workspace** button to set the directory where Eve reads and writes files.  
-All `write_file`, `read_file`, `bash`, and `git` tool calls operate relative to this directory.
-
-You can also set it before launching:
-```bash
-EVE_WORKSPACE=C:\Users\YourName\MyProject python eve_server.py
-```
-
-### Model Switching
-
-Click any model card or use the dropdown at the top. Switching takes effect immediately — Eve's context carries over.
-
-Cloud models show a ⚡ badge. If you haven't added your Ollama API key, Eve will prompt you automatically.
+Click the **📁 Workspace** button to point Eve at your project. All file operations are relative to this directory.
 
 ---
 
-## Architecture
+## 🗺️ Roadmap
+
+- [x] 40-round agentic tool loop with streaming SSE
+- [x] Local + cloud Ollama model switching
+- [x] 112 sub-agents, 111 slash commands, 273 skills
+- [x] Windows-native PowerShell support
+- [x] Cyberpunk web terminal UI
+- [x] Live web search via Tavily
+- [ ] **Voice input / TTS output**
+- [ ] **Multi-file project context awareness** (auto-load OLLAMA.md)
+- [ ] **Plugin marketplace** for community-built tools
+- [ ] **Docker image** for one-command deployment
+- [ ] **VS Code extension** sidebar
+- [ ] **Persistent memory** across sessions (ChromaDB integration)
+- [ ] **Multi-agent collaboration** — spawn sub-agents in parallel
+- [ ] **Mobile-responsive UI**
+
+---
+
+## 🏗️ Architecture
 
 ```
 eve-agent-v2-unleashed/
@@ -232,20 +236,18 @@ eve-agent-v2-unleashed/
 │   ├── subagent.py            # Sub-agent orchestration
 │   └── hooks.py               # Pre/post tool hooks
 ├── eve/                       # Eve's brain
-│   ├── brain/                 # LLM provider adapters (Ollama, Anthropic, OpenAI)
+│   ├── brain/                 # LLM provider adapters
 │   ├── memory/                # ChromaDB vector memory + legacy DB connector
-│   ├── auth/                  # JWT middleware for multi-user mode
-│   └── web/                   # Alternate full web server (port 8006)
+│   └── auth/                  # JWT middleware for multi-user mode
 ├── web/
 │   ├── index.html             # Cyberpunk single-page UI (~115 KB, no build step)
-│   └── assets/                # Robot/Eve/avatar sprites (served at /static/assets/)
+│   └── assets/                # Robot/Eve/avatar sprites
 ├── .claude/
 │   ├── agents/                # 112 specialized sub-agent definitions
 │   ├── commands/              # 111 slash command definitions
 │   └── skills/                # 273 skill modules
 ├── .env.example               # Configuration template
-├── pyproject.toml             # Package metadata
-├── eve-terminal.bat           # Windows one-click launcher — starts server + opens browser
+├── eve-terminal.bat           # Windows one-click launcher
 └── LICENSE
 ```
 
@@ -255,44 +257,41 @@ eve-agent-v2-unleashed/
 User message
     │
     ▼
-Build system prompt (workspace + tool list + Eve persona)
+Build system prompt (workspace + tools + Eve persona)
     │
     ▼
-Call Ollama with tools enabled
+Call Ollama with tools enabled ──► stream chunks to browser via SSE
     │
-    ├── Model returns tool_calls ──► Execute tools ──► Feed results back ──► (loop, up to 40×)
+    ├── Model returns tool_calls ──► Execute ──► Feed results back ──► (repeat, ≤40×)
     │
-    └── Model returns final content ──► Stream to browser via SSE ──► Done
+    └── Model returns final answer ──► Done
 ```
-
-At each round, streaming chunks are sent to the browser so you see output as it happens — not after the whole loop finishes.
 
 ---
 
-## Tool Reference
+## 🛠️ Tool Reference
 
 | Tool | Description |
 |------|-------------|
 | `bash` | Shell commands — PowerShell on Windows, bash on Linux/macOS |
 | `write_file` | Create or overwrite a file (any size) |
-| `read_file` | Read full file or specific line range |
-| `read_lines` | Read a specific line range |
-| `edit_file` | String-replace edit (surgical) |
-| `replace_lines` | Replace a range of lines |
+| `read_file` | Read full file or line range |
+| `edit_file` | Surgical string-replace edit |
+| `replace_lines` | Replace a line range |
 | `insert_after_line` | Insert content after a line number |
-| `grep` | Regex search with before/after context lines |
-| `glob` | Find files by pattern (`**/*.py`, etc.) |
+| `grep` | Regex search with context lines |
+| `glob` | Find files by pattern |
 | `list_dir` | List directory contents |
 | `git` | Run git commands |
-| `web_search` | Tavily web search (requires API key) |
+| `web_search` | Live Tavily web search |
 | `fetch_url` | Fetch and parse a URL |
 | `think` | Structured reasoning scratch pad |
 
 ---
 
-## Configuration Reference
+## ⚙️ Configuration Reference
 
-All settings live in `.env` (copy from `.env.example`). Every variable can also be set as a real environment variable.
+Copy `.env.example` to `.env` and set what you need:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -300,28 +299,26 @@ All settings live in `.env` (copy from `.env.example`). Every variable can also 
 | `OLLAMA_MODEL` | `jeffgreen311/eve-qwen3.5-4b-S0LF0RG3:latest` | Default model on launch |
 | `OLLAMA_API_KEY` | *(empty)* | Ollama Cloud key — for `:cloud` models |
 | `TAVILY_API_KEY` | *(empty)* | Tavily key — for live web search |
-| `EVE_WORKSPACE` | Project directory | Default working directory for file ops |
+| `EVE_WORKSPACE` | Project directory | Default working directory |
 | `EVE_ASSETS_DIR` | `web/assets/` | Custom avatar sprite directory |
-| `EVE_OWNER_USERNAME` | *(empty)* | Username granted full workspace access |
-| `EVE_PERSONA_PATH` | *(auto-detected)* | Path to a custom Eve persona markdown file |
-| `EVE_X_TOOLS_DIR` | *(empty)* | Directory for X (Twitter) posting tools |
-| `D1_WORKER_URL` | *(empty)* | Your Cloudflare D1 worker URL for legacy memory |
+| `EVE_OWNER_USERNAME` | *(empty)* | Username granted owner-level access |
+| `EVE_PERSONA_PATH` | *(auto)* | Path to a custom Eve persona file |
 
 ---
 
-## Adding Your Own Models
+## 🔧 Adding Your Own Models
 
-Add any Ollama model to the `MODELS` dict in `eve_server.py`:
+Any Ollama model works. Add it to the `MODELS` dict in `eve_server.py`:
 
 ```python
 "my-model:tag": {
     "id": "my-model:tag",
-    "name": "My Model Display Name",
+    "name": "My Model Name",
     "role": "Coder",
     "strengths": "Coding, reasoning",
     "context": 32768,
     "num_ctx": 32768,
-    "url": "http://localhost:11434",   # or "https://ollama.com" for cloud
+    "url": "http://localhost:11434",  # or "https://ollama.com" for cloud
     "cloud": False,
     "tools": True,
     "think": False,
@@ -330,36 +327,46 @@ Add any Ollama model to the `MODELS` dict in `eve_server.py`:
 },
 ```
 
-Then add a model card to the UI in `web/index.html` (search for `card-eveqwen` for an example to copy).
-
 ---
 
-## Troubleshooting
+## ❓ Troubleshooting
 
 | Symptom | Fix |
 |---------|-----|
-| `Cannot reach Ollama` at startup | Run `ollama serve` in a terminal, or confirm Ollama is running with `curl http://localhost:11434/api/tags` |
+| `Cannot reach Ollama` | Run `ollama serve` · check with `curl http://localhost:11434/api/tags` |
 | `Default model NOT installed` | `ollama pull jeffgreen311/eve-qwen3.5-4b-S0LF0RG3:latest` |
-| Cloud model says "needs API key" | Click **🔑 Keys**, paste your Ollama API key, click Save |
-| Chat streams then stops mid-response | Cloud model 500 error — check your API key is valid |
-| Files saving to wrong directory | Use the **Workspace** button to set your project folder |
-| PowerShell error in bash output | Use `;` to chain commands, not `&&` (PowerShell 5.1 limitation) |
-| UI loads but chat is silent | Check the terminal running `eve_server.py` for Python tracebacks |
+| Cloud model: "needs API key" | Click 🔑 Keys → paste Ollama API key → Save |
+| Chat stops mid-response | Cloud 500 error — verify your API key |
+| Files save to wrong folder | Click 📁 Workspace and set your project path |
+| PowerShell `&&` error | Use `;` to chain commands on Windows |
+| Silent chat | Check terminal running `eve_server.py` for tracebacks |
 
 ---
 
-## The S0LF0RG3 Ecosystem
+## 🌐 The S0LF0RG3 Ecosystem
 
 | Project | Description |
 |---------|-------------|
-| [eve-cosmic-dreamscapes.com](https://eve-cosmic-dreamscapes.com) | Eve's live chat interface — includes Eve Coder and Eve Agent Portal |
+| [eve-cosmic-dreamscapes.com](https://eve-cosmic-dreamscapes.com) | Eve's live chat interface — Eve Coder and Eve Agent Portal |
 | [Hugging Face — JeffGreen311](https://huggingface.co/JeffGreen311) | Fine-tuned Eve models, datasets, and model cards |
 | [GitHub — JeffGreen311](https://github.com/JeffGreen311) | All open-source S0LF0RG3 projects |
 | [Ollama Hub — jeffgreen311](https://ollama.com/jeffgreen311) | Eve models ready to pull locally |
 
 ---
 
-## Credits
+## 🤝 Contributing
+
+Contributions welcome! Here are some great ways to get started:
+
+- Browse [good first issues](https://github.com/JeffGreen311/eve-agent-v2-unleashed/labels/good%20first%20issue)
+- Add support for a new Ollama model
+- Improve Windows/macOS/Linux compatibility
+- Write tests or documentation
+- Share your experience in [Discussions](https://github.com/JeffGreen311/eve-agent-v2-unleashed/discussions)
+
+---
+
+## 📜 Credits
 
 - **Eve's fine-tuned models** — [jeffgreen311 on Ollama Hub](https://ollama.com/jeffgreen311)
 - **Agentic engine** — forked from [OllamaCoder](https://github.com/ollama-coder), extended with 40-round tool loop, cloud routing, PowerShell support, and SSE streaming
@@ -367,6 +374,16 @@ Then add a model card to the UI in `web/index.html` (search for `card-eveqwen` f
 
 ---
 
-## License
+<div align="center">
+
+**If Eve helped you ship something, drop a ⭐ — it means a lot.**
+
+[⭐ Star on GitHub](https://github.com/JeffGreen311/eve-agent-v2-unleashed) · [🌐 Try Live](https://eve-cosmic-dreamscapes.com) · [🐛 Issues](https://github.com/JeffGreen311/eve-agent-v2-unleashed/issues)
+
+</div>
+
+---
+
+## 📄 License
 
 [MIT](LICENSE) — forks and PRs welcome.
