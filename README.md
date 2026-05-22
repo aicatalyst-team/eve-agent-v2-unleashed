@@ -9,6 +9,8 @@
 **No accounts. No cloud lock-in. No limits.**  
 Run a 480B-parameter agentic coding engine on your own machine.
 
+[![Eve Demo](docs/demo.gif)](https://eve-cosmic-dreamscapes.com)
+
 [![GitHub Stars](https://img.shields.io/github/stars/JeffGreen311/eve-agent-v2-unleashed?style=for-the-badge&color=00ff41&labelColor=0c0c1a)](https://github.com/JeffGreen311/eve-agent-v2-unleashed/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-00ffff?style=for-the-badge&labelColor=0c0c1a)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-ff00ff?style=for-the-badge&labelColor=0c0c1a)](https://python.org)
@@ -33,8 +35,6 @@ User: "Build me a FastAPI server with JWT auth and a PostgreSQL backend"
 Eve: [reads project] → [plans approach] → [writes 6 files] →
      [runs tests] → [fixes 2 errors] → [verifies it works] → Done ✓
 ```
-
-> **Live demo** [![Eve Demo](docs/demo.gif)](https://eve-cosmic-dreamscapes.com) — Eve's full chat interface including Eve Coder and Eve Agent Portal.
 
 ---
 
