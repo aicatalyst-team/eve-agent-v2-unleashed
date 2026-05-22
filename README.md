@@ -355,6 +355,17 @@ Then add a model card to the UI in `web/index.html` (search for `card-eveqwen` f
 
 ---
 
+## The S0LF0RG3 Ecosystem
+
+| Project | Description |
+|---------|-------------|
+| [eve-cosmic-dreamscapes.com](https://eve-cosmic-dreamscapes.com) | Eve's live chat interface — includes Eve Coder and Eve Agent Portal |
+| [Hugging Face — JeffGreen311](https://huggingface.co/JeffGreen311) | Fine-tuned Eve models, datasets, and model cards |
+| [GitHub — JeffGreen311](https://github.com/JeffGreen311) | All open-source S0LF0RG3 projects |
+| [Ollama Hub — jeffgreen311](https://ollama.com/jeffgreen311) | Eve models ready to pull locally |
+
+---
+
 ## Credits
 
 - **Eve's fine-tuned models** — [jeffgreen311 on Ollama Hub](https://ollama.com/jeffgreen311)
