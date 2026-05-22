@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="<a href='https://postimg.cc/PC868d8W' target='_blank'><img src='https://i.postimg.cc/PC868d8W/eve-v2u-logo.png' border='0' alt='eve-v2u-logo'></a>" width="140" alt="Eve V2 Unleashed" />
+<img src="web/assets/eve_v2u_logo.png" width="220" alt="Eve V2 Unleashed" />
 
 # ◈ EVE AGENT V2 UNLEASHED ◈
 
