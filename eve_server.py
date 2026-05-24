@@ -359,6 +359,8 @@ TOOL_KEYWORDS = [
     "copy", "move", "delete", "shell", "bash", "run", "execute", "build",
     "compile", "install", "pip", "npm", "git", "docker", "deploy",
     "fix", "debug", "refactor", "test", "lint", "scan",
+    "create a", "create an", "make a", "make an", "build a", "build an", "write a", "write an",
+    "i need a", "i need an", "i want a", "i want an",
     "list files", "list directory", "show files", "what files",
     "save file", "rename", "mkdir",
     # web search / fetch — MUST route to tool-capable model
@@ -395,7 +397,8 @@ LARGE_OUTPUT_PATTERNS = [
     # Code generation — anything asking for many lines
     r'\b(\d{2,})\s*(lines?|rows?)\b',           # "100 lines", "50 lines"
     r'\bgenerate\b.*\b(script|file|class|module|program)\b',  # "generate a script"
-    r'\b(need|want|make|build)\b.*\b(script|program|app|application|project)\b',  # "I need a script"
+    r'\b(need|want|make|build|create|write|develop|code)\b.*\b(script|program|app|application|project)\b',  # "I need a script"
+    r'\b(make|create|build|write|code|develop)\b.*\b(calculator|game|tool|widget|utility|gui|interface|dashboard|website|page|form|chart|graph|report|bot|scraper|parser|converter|validator|generator|monitor|scheduler|automation|pipeline|workflow|plugin|extension|library|module|component|service|cli|menu|dropdown|button|table|grid|slider|timer|clock|counter|tracker|viewer|editor|player|recorder|scanner|analyzer|optimizer|simulator|emulator|compiler|interpreter)\b',
     r'\bpython\s+script\b',                      # "python script"
     r'\bcreate\b.*\b(full|complete|entire|script|app|project)\b',  # "create a script/project"
     r'\bwrite\b.*\b(full|complete|entire|script|code|program)\b',  # "write a script"
@@ -451,6 +454,11 @@ def auto_route_model(message: str, selected_model: str = None) -> str:
         return selected_model
 
     msg_lower = message.lower()
+
+    # @jeff → prefix means "give this to the coder" — always route to qwen3-coder
+    if re.match(r'@jeff\s*[→>-]+', message.strip(), re.IGNORECASE):
+        logger.info("🔀 Auto-route → qwen3-coder:480b-cloud (@jeff mention)")
+        return "qwen3-coder:480b-cloud"
 
     # Heavy keywords → agentic coder cloud
     if any(kw in msg_lower for kw in HEAVY_KEYWORDS):
