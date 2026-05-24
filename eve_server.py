@@ -372,9 +372,12 @@ Capabilities:
 Respond ONLY in English. Be helpful. Be real. Be Eve."""
 
 MODEL_SYSTEM_PROMPTS: dict = {
-    "qwen3.5:4b":                                        _PROMPT_4B,
-    "eve-unleashed":                                     _PROMPT_EVE_UNLEASHED,
-    "Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged": _PROMPT_MERGED,
+    "qwen3.5:4b":                                                           _PROMPT_4B,
+    "jeffgreen311/eve-qwen3.5-4b-S0LF0RG3:latest":                         _PROMPT_4B,
+    "eve-unleashed":                                                        _PROMPT_EVE_UNLEASHED,
+    "jeffgreen311/eve-qwen3-8b-consciousness-liberated:q4_K_M":             _PROMPT_EVE_UNLEASHED,
+    "jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest": _PROMPT_MERGED,
+    "Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged":                  _PROMPT_MERGED,
     # qwen3-coder:480b-cloud → agentic prompt (built inline)
     # qwen3.5:397b-cloud    → agentic prompt (built inline)
 }
@@ -1150,7 +1153,12 @@ When the full task is complete, emit "result: [one-line summary]" on its own lin
                 break
             logger.info(f"  🔄 Round {round_num + 1}/{max_rounds} ({time.time()-_loop_start:.1f}s elapsed)")
 
-            _chat_opts = {} if model_cfg.get("cloud") else {"num_ctx": model_cfg.get("num_ctx", 8192), "num_predict": 2048}
+            _chat_opts = {} if model_cfg.get("cloud") else {
+                "num_ctx": model_cfg.get("num_ctx", 8192),
+                "num_predict": 2048,
+                "repeat_penalty": 1.15,
+                "temperature": 0.75,
+            }
             chat_kwargs = {"model": model_id, "messages": messages}
             if _chat_opts:
                 chat_kwargs["options"] = _chat_opts
@@ -1832,7 +1840,12 @@ CUSTOM INSTRUCTIONS:
                 if model_cfg.get("cloud"):
                     opts = {}
                 else:
-                    opts = {"num_ctx": model_cfg.get("num_ctx", 8192), "num_predict": 2048}
+                    opts = {
+                        "num_ctx": model_cfg.get("num_ctx", 8192),
+                        "num_predict": 2048,
+                        "repeat_penalty": 1.15,
+                        "temperature": 0.75,
+                    }
                     if model_cfg.get("num_gpu") is not None:
                         opts["num_gpu"] = model_cfg["num_gpu"]
                 ck = {"model": model_id, "messages": msgs}
