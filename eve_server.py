@@ -235,7 +235,7 @@ MODELS = {
         "url": "https://ollama.com",
         "cloud": True,
         "tools": True,
-        "think": False,
+        "think": True,   # separate <think> tokens from response content
         "conversation_only": False,
         "promote_thinking": False,
     },

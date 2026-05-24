@@ -547,6 +547,52 @@ body::after {
 }
 body { animation: crt-flicker 8s infinite; }
 
+/* ══ Thinking block (collapsible, qwen3-coder reasoning) ══ */
+.think-block {
+  border: 1px solid #7c3aed88;
+  background: #120a2a;
+  border-radius: 3px;
+  margin-bottom: 6px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  overflow: hidden;
+}
+.think-block-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  cursor: pointer;
+  color: #a78bfa;
+  border-bottom: 1px solid #7c3aed44;
+  user-select: none;
+  background: #1a0a3a;
+}
+.think-block-header:hover { background: #1f0f40; }
+.think-chevron {
+  font-size: 9px;
+  transition: transform 0.2s;
+  color: #7c3aed;
+}
+.think-chevron.open { transform: rotate(90deg); }
+.think-token-count {
+  margin-left: auto;
+  font-size: 9px;
+  color: #6b21a8;
+}
+.think-body {
+  display: none;
+  padding: 8px 12px;
+  color: #c4b5fd;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 400px;
+  overflow-y: auto;
+  border-top: 1px solid #7c3aed22;
+}
+.think-body.open { display: block; }
+
 /* ══ Keyboard focus visibility ══ */
 :focus-visible {
   outline: 2px solid var(--border-cyan);
@@ -1621,8 +1667,31 @@ userInput.addEventListener('keydown', async (e) => {
               }
             } else if (data.type === 'thinking' && data.content) {
               fullThinking += data.content;
-              thinkingBar.innerHTML = '💭 ' + escapeHtml(fullThinking.slice(-600));
               liveStatus.textContent = '🧠 thinking...';
+              // Create think-block once, then update its body
+              let thinkBlock = document.getElementById(msgId + '-think');
+              if (!thinkBlock) {
+                thinkBlock = document.createElement('div');
+                thinkBlock.className = 'think-block';
+                thinkBlock.id = msgId + '-think';
+                thinkBlock.innerHTML =
+                  `<div class="think-block-header" onclick="
+                    const b=document.getElementById('${msgId}-think-body');
+                    const c=this.querySelector('.think-chevron');
+                    b.classList.toggle('open'); c.classList.toggle('open');
+                  ">
+                    <span class="think-chevron">▶</span>
+                    🧠 <span style="color:#a78bfa">Thinking</span>
+                    <span class="think-token-count" id="${msgId}-think-tokens"></span>
+                  </div>
+                  <div class="think-body" id="${msgId}-think-body"></div>`;
+                // Insert before the response div
+                liveResponse.parentNode.insertBefore(thinkBlock, liveResponse);
+              }
+              const thinkBody = document.getElementById(msgId + '-think-body');
+              if (thinkBody) thinkBody.textContent = fullThinking;
+              const tokenEl = document.getElementById(msgId + '-think-tokens');
+              if (tokenEl) tokenEl.textContent = `~${Math.round(fullThinking.length / 4)} tokens`;
             } else if (data.type === 'tool') {
               liveStatus.textContent = '🔧 ' + data.tool + '(' + (data.args||'').substring(0,30) + ')';
               thinkingBar.innerHTML = '🔧 ' + escapeHtml(data.tool + ' → ' + (data.args||''));
