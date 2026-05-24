@@ -20,12 +20,12 @@ class Settings(BaseSettings):
     )
     openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
     ollama_base_url: str = Field(default="http://ollama:11434", alias="OLLAMA_BASE_URL")
-    ollama_model: str = Field(default="jeffgreen311/eve-qwen3.5-4b-S0LF0RG3:latest", alias="OLLAMA_MODEL")
+    ollama_model: str = Field(default="jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest", alias="OLLAMA_MODEL")
     ollama_api_key: str = Field(default="", alias="OLLAMA_API_KEY")
 
     # Default provider
     default_provider: str = "ollama"
-    default_model: str = "jeffgreen311/eve-qwen3.5-4b-S0LF0RG3:latest"
+    default_model: str = "jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest"
 
     # Hyperbrowser
     hyperbrowser_api_key: str = Field(default="", alias="HYPERBROWSER_API_KEY")

@@ -10,13 +10,13 @@ from dotenv import load_dotenv
 load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'), override=True)
 
 # Force the model
-os.environ.setdefault('OLLAMA_MODEL', 'jeffgreen311/eve-qwen3.5-4b-S0LF0RG3:latest')
+os.environ.setdefault('OLLAMA_MODEL', 'jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest')
 os.environ.setdefault('OLLAMA_BASE_URL', 'http://localhost:11434')
 os.environ.setdefault('EVE_DEFAULT_PROVIDER', 'ollama')
-os.environ.setdefault('EVE_DEFAULT_MODEL', 'jeffgreen311/eve-qwen3.5-4b-S0LF0RG3:latest')
-os.environ.setdefault('LOCAL_MODEL', 'jeffgreen311/eve-qwen3.5-4b-S0LF0RG3:latest')
+os.environ.setdefault('EVE_DEFAULT_MODEL', 'jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest')
+os.environ.setdefault('LOCAL_MODEL', 'jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest')
 os.environ.setdefault('LOCAL_OLLAMA_URL', 'http://localhost:11434')
-os.environ.setdefault('CLOUD_MODEL', 'jeffgreen311/eve-qwen3.5-4b-S0LF0RG3:latest')
+os.environ.setdefault('CLOUD_MODEL', 'jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest')
 os.environ.setdefault('CLOUD_OLLAMA_URL', 'http://localhost:11434')
 
 from eve.connectors.cli_connector import CLIConnector

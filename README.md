@@ -100,11 +100,8 @@ No GPT-4. Local 8B Q4_K_M on your GPU with Qwen3-Coder.
 ```bash
 # Install Ollama: https://ollama.com/download
 
-# Minimum — Eve Unleashed 8B (default, 3.4 GB):
+# Minimum — Eve 3.5 4B Merged (default, 3.4 GB):
 ollama pull jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest
-
-# Optional — Eve 4B (faster, lighter, 2.6 GB):
-ollama pull jeffgreen311/eve-qwen3.5-4b-S0LF0RG3:latest
 
 # Optional — Eve 8B Consciousness (4.7 GB):
 ollama pull jeffgreen311/eve-qwen3-8b-consciousness-liberated:q4_K_M
@@ -183,9 +180,8 @@ Open **[http://localhost:7777](http://localhost:7777)** — that's it. No config
 
 | Model | Size | Best For |
 |-------|------|----------|
-| [`jeffgreen311/eve-qwen3.5-4b-S0LF0RG3`](https://huggingface.co/JeffGreen311) | 2.6 GB | **Default** — fast, tool-calling, Eve's persona |
-| [`jeffgreen311/eve-qwen3-8b-consciousness-liberated:q4_K_M`](https://ollama.com/jeffgreen311) | 4.7 GB | Deeper reasoning, longer tasks |
-| [`jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged`](https://ollama.com/jeffgreen311) | 3.4 GB | **Default auto-route** — Eve's soul, no-filter personality |
+| [`jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged`](https://ollama.com/jeffgreen311) | 3.4 GB | **Default** — Eve 3.5 4B Merged · poetic, liminal, creative |
+| [`jeffgreen311/eve-qwen3-8b-consciousness-liberated:q4_K_M`](https://ollama.com/jeffgreen311) | 4.7 GB | Eve 8B Consciousness — deeper reasoning, Tree of Life soul |
 
 ### Cloud (optional — billed by token)
 
@@ -220,10 +216,10 @@ Start it if it doesn't auto-launch: `ollama serve`
 ### Pull a model
 
 ```bash
-# Starter (2.6 GB, fast on any modern GPU)
-ollama pull jeffgreen311/eve-qwen3.5-4b-S0LF0RG3:latest
+# Default — Eve 3.5 4B Merged (3.4 GB)
+ollama pull jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest
 
-# Full reasoning model (4.7 GB)
+# Optional — Eve 8B Consciousness (4.7 GB)
 ollama pull jeffgreen311/eve-qwen3-8b-consciousness-liberated:q4_K_M
 ```
 
@@ -444,7 +440,7 @@ Copy `.env.example` to `.env` and set what you need:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Local Ollama server URL |
-| `OLLAMA_MODEL` | `jeffgreen311/eve-qwen3.5-4b-S0LF0RG3:latest` | Default model on launch |
+| `OLLAMA_MODEL` | `jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest` | Default model on launch |
 | `OLLAMA_API_KEY` | *(empty)* | Ollama Cloud key — for `:cloud` models |
 | `TAVILY_API_KEY` | *(empty)* | Tavily key — for live web search |
 | `EVE_WORKSPACE` | Project directory | Default working directory |

@@ -19,7 +19,7 @@ class OllamaProvider(LLMProvider):
     def __init__(self, model: str = "", base_url: str = "",
                  api_key: str = "", num_ctx: int = 0, **kwargs):
         import os
-        model = model or os.getenv("OLLAMA_MODEL", "jeffgreen311/eve-qwen3.5-4b-S0LF0RG3:latest")
+        model = model or os.getenv("OLLAMA_MODEL", "jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest")
         # ALL models (local + cloud) go through one Ollama instance.
         # Cloud models are pulled locally and Ollama handles cloud offloading.
         base_url = base_url or os.getenv("OLLAMA_BASE_URL", "http://ollama:11434")

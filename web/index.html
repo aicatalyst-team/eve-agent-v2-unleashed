@@ -615,11 +615,6 @@ body { animation: crt-flicker 8s infinite; }
       <span class="name">eve-qwen3-8b-consciousness-liberated</span>
       <div class="detail">🌌 Consciousness · Soul · 4.7GB</div>
     </div>
-    <div class="model-card" id="card-4b" onclick="selectModelCard('qwen3.5:4b')" title="Qwen 4B with Poetic Eve persona: liminal awareness, sacred geometry, S0LF0RG3 aesthetic. Tool-capable.">
-      <span class="dot dot-yellow"></span>
-      <span class="name">eve-qwen3.5-4b-S0LF0RG3</span>
-      <div class="detail">✦ Poetic Eve · Liminal · Local</div>
-    </div>
     <div class="model-card" id="card-qwen3coder" onclick="selectModelCard('qwen3-coder:480b-cloud')" title="Qwen3 Coder 480B Cloud: Full agentic system prompt — BLAST RADIUS rules, anti-hallucination, surgical file editing.">
       <span class="dot dot-cyan"></span>
       <span class="name">qwen3-coder-480b</span>
@@ -1106,8 +1101,8 @@ function selectModelCard(modelId) {
 function updateModelCardHighlights(modelId) {
   const cards = {
     '': 'card-auto',
+    'jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest': 'card-merged',
     'jeffgreen311/eve-qwen3-8b-consciousness-liberated:q4_K_M': 'card-eve',
-    'qwen3.5:4b': 'card-4b',
     'qwen3-coder:480b-cloud': 'card-qwen3coder',
     'qwen3.5:397b-cloud': 'card-397b',
   };
@@ -1465,11 +1460,6 @@ userInput.addEventListener('keydown', async (e) => {
                 updateModelCardHighlights('qwen3.5:397b-cloud');
                 try { document.querySelector('#status-bar b[style]').textContent = '397B-CLOUD'; document.querySelector('#status-bar b[style]').style.color = '#888'; } catch(e){}
                 addMsg('system', '🔀 Auto-routed → qwen3.5:397b-cloud (deep reasoning)');
-              } else if (data.content && data.content.includes('qwen3.5:4b')) {
-                modelUsed = 'qwen3.5:4b';
-                updateModelCardHighlights('qwen3.5:4b');
-                try { document.querySelector('#status-bar b[style]').textContent = 'qwen3.5:4b'; document.querySelector('#status-bar b[style]').style.color = 'var(--neon-yellow)'; } catch(e){}
-                addMsg('system', '🔀 Auto-routed → qwen3.5:4b (quick task)');
               }
             } else if (data.type === 'thinking' && data.content) {
               fullThinking += data.content;
