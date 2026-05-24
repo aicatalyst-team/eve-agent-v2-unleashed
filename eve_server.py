@@ -2940,4 +2940,4 @@ if __name__ == "__main__":
     # Pre-load agent
     get_agent()
 
-    uvicorn.run(app, host="0.0.0.0", port=7777, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=7777, log_level="info", timeout_graceful_shutdown=0)
