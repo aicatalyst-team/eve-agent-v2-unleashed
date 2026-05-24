@@ -50,6 +50,26 @@ _BLOCKED_CMD_RE = _re.compile(
     r'shutdown\s+|mkfs|:(){ :|:& };:|fdisk|diskpart|dd\s+if=)\b',
     _re.IGNORECASE,
 )
+# Commands that launch long-running servers — will block the agent loop forever
+_BLOCKING_CMD_RE = _re.compile(
+    r'\b(uvicorn|gunicorn|flask\s+run|streamlit\s+run|python\s+-m\s+flask|'
+    r'python\s+-m\s+uvicorn|python\s+-m\s+streamlit|npm\s+(start|run\s+dev|run\s+start)|'
+    r'yarn\s+(start|dev)|node\s+server|python\s+manage\.py\s+runserver|'
+    r'rails\s+server|rails\s+s\b|php\s+-S\b)\b',
+    _re.IGNORECASE,
+)
+
+def _check_blocking_cmd(command: str) -> str | None:
+    """Return a warning string if the command would launch a blocking server, else None."""
+    if _BLOCKING_CMD_RE.search(command):
+        return (
+            "⚠️ BLOCKED: This command launches a long-running server process that would "
+            "hang the agent loop indefinitely. Never start servers inside a bash tool call. "
+            "If tests passed, the task is complete — report results and stop. "
+            "If you need to verify the server starts, use: "
+            "Start-Process powershell -ArgumentList '-Command python yourfile.py' -NoNewWindow"
+        )
+    return None
 
 # ── Host File Bridge ─────────────────────────────────────────────────────────
 # When running inside Docker and EVE_WORKSPACE is a Windows path (C:\...),
@@ -802,6 +822,9 @@ async def chat(req: ChatRequest):
         Returns:
             The command output
         """
+        blocked = _check_blocking_cmd(command)
+        if blocked:
+            return blocked
         try:
             ws = os.environ.get('EVE_WORKSPACE', _DEFAULT_WORKSPACE)
             if _is_host_path(ws):
@@ -1351,7 +1374,11 @@ async def chat_stream(req: ChatRequest):
         POWERSHELL RULES: Use semicolons (;) to chain commands — NOT && (unsupported in PS 5.1). Example: "python --version; pip show requests"
         - AVOID using bash for file reading (use read_file), searching (use grep/glob), or listing (use list_directory) — use the dedicated tools instead.
         - For independent commands that can run at the same time, call bash multiple times in parallel in the same response.
-        - Default timeout is 30s — never run pip list or other slow commands; use "pip show <package>" to check a specific package.'''
+        - Default timeout is 30s — never run pip list or other slow commands; use "pip show <package>" to check a specific package.
+        - NEVER run server launch commands (uvicorn, flask run, python someserver.py, npm start, etc.) — they block forever.'''
+        blocked = _check_blocking_cmd(command)
+        if blocked:
+            return blocked
         try:
             ws = os.environ.get('EVE_WORKSPACE', _DEFAULT_WORKSPACE)
             if _is_host_path(ws):
@@ -1681,6 +1708,8 @@ FILE CONTENT: When the user shares code in triple backticks, that IS the file co
 TOOL NAMES (exact, no aliases): bash · read_file · read_lines · write_file · grep · glob · find_file · list_directory · insert_after_line · replace_lines · web_search · web_fetch. NEVER call tools named "run", "shell", "execute", "execute_command", "run_command" — they do not exist. Use "bash" for shell commands.
 
 COMMUNICATION: One sentence before your first tool call stating what you're doing. Brief update when you change direction or hit a blocker. End every turn: "Done: [what changed]. Next: [what's next or nothing]." When the full task is complete, emit "result: [one-line summary of what was delivered]" on its own line. If truly blocked on something only the user can unblock, emit "needs input: [exactly what you need]" on its own line.
+
+NEVER LAUNCH SERVERS IN BASH: Commands like `python someapi.py`, `uvicorn ...`, `flask run`, `npm start`, `streamlit run` are blocking processes — they will hang the agent loop until timeout. The bash tool will block them. After tests pass, your job is done. Declare completion and stop. Do not attempt to "show it in action" by starting the server.
 
 TASK COMPLETION PROTOCOL — MANDATORY before declaring done:
 1. VERIFY: After every write/insert/replace, immediately call read_lines on the changed section to confirm the content landed correctly.
