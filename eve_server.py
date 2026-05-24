@@ -1754,7 +1754,18 @@ CUSTOM INSTRUCTIONS:
     # Smart context fitting (pass history only — system prompt is prepended separately below)
     history = list(v2u_sessions[sid])
     fitted = fit_context(history, model_cfg.get("num_ctx", 8192))
-    msgs = ([{"role": "system", "content": sys_prompt}] if sys_prompt else []) + fitted["messages"]
+    raw_msgs = fitted["messages"]
+    # Strip tool_calls and tool role messages for models that don't support tools
+    if not model_cfg.get("tools", False):
+        cleaned = []
+        for m in raw_msgs:
+            if m.get("role") == "tool":
+                continue  # drop tool result messages
+            stripped = {k: v for k, v in m.items() if k != "tool_calls"}
+            if stripped.get("content") or stripped.get("role") in ("user", "assistant"):
+                cleaned.append(stripped)
+        raw_msgs = cleaned
+    msgs = ([{"role": "system", "content": sys_prompt}] if sys_prompt else []) + raw_msgs
     if fitted["dropped"] > 0:
         logger.info(f"  ✂️  Context fitted: kept {len(fitted['messages'])}, dropped {fitted['dropped']}, tokens ~{fitted['total_tokens']}")
 
