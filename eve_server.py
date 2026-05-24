@@ -503,6 +503,67 @@ def auto_route_model(message: str, selected_model: str = None) -> str:
 
 _LOCK_BYPASS_RE = None
 
+def _check_tool_failure_patterns(tool_log: list) -> str:
+    """
+    Detect repetitive tool-call loops using argument similarity.
+    Returns a diagnostic string if a loop is detected, else "".
+    """
+    import difflib, json as _json
+    if len(tool_log) < 3:
+        return ""
+
+    # Group by tool name and check last 3+ consecutive same-tool calls
+    by_tool: dict[str, list] = {}
+    for entry in tool_log[-6:]:
+        name = entry.get("tool", "")
+        by_tool.setdefault(name, []).append(entry)
+
+    for tool_name, calls in by_tool.items():
+        if len(calls) < 3:
+            continue
+        sigs = [
+            _json.dumps(c.get("args", {}), sort_keys=True, default=str)
+            for c in calls[-3:]
+        ]
+        ratios = [
+            difflib.SequenceMatcher(None, sigs[i], sigs[i + 1]).ratio()
+            for i in range(len(sigs) - 1)
+        ]
+        avg = sum(ratios) / len(ratios) if ratios else 0
+        if avg > 0.70:
+            return (
+                f"Tool loop detected: '{tool_name}' called {len(calls)}× "
+                f"with {int(avg * 100)}% identical args — possible stuck state"
+            )
+    return ""
+
+
+def _validate_task_completion(response_content: str, tool_log: list) -> dict:
+    """
+    Validate that a task was actually completed rather than silently abandoned.
+    Returns {"valid": bool, "issues": list[str], "warnings": list[str]}.
+    """
+    issues: list[str] = []
+    warnings: list[str] = []
+
+    if not response_content or len(response_content.strip()) < 10:
+        issues.append("Model returned an empty or near-empty response")
+
+    failures = [t for t in tool_log if t.get("status") == "failed"]
+    if len(failures) >= 3:
+        issues.append(f"{len(failures)} consecutive tool failures without recovery")
+
+    loop_diag = _check_tool_failure_patterns(tool_log)
+    if loop_diag:
+        warnings.append(loop_diag)
+
+    completion_signals = {"result:", "✅", "done:", "complete", "finished", "all done", "task complete"}
+    if tool_log and not any(sig in response_content.lower() for sig in completion_signals):
+        warnings.append("No explicit completion signal in response — task may be incomplete")
+
+    return {"valid": not issues, "issues": issues, "warnings": warnings}
+
+
 def should_bypass_lock(message: str) -> bool:
     """Return True for trivial acknowledgements that shouldn't burn a cloud lock."""
     import re
@@ -2026,9 +2087,22 @@ CUSTOM INSTRUCTIONS:
                     logger.info(f"🔓 Session '{sid}' lock released — task complete")
                     yield sse("unlocked", {"session_id": sid})
 
+            # Validate task completion before signalling done
+            _completion = _validate_task_completion(final_content, tool_log)
+            if not _completion["valid"]:
+                for _issue in _completion["issues"]:
+                    logger.warning(f"Task validation issue: {_issue}")
+                yield sse("validation_failed", {"issues": _completion["issues"]})
+                final_content += "\n\n⚠️ Task may be incomplete: " + "; ".join(_completion["issues"])
+            elif _completion["warnings"]:
+                for _w in _completion["warnings"]:
+                    logger.info(f"Task validation warning: {_w}")
+                yield sse("validation_warning", {"warnings": _completion["warnings"]})
+
             _perf["wall_s"] = round(time.time() - _perf.pop("start"), 2)
             yield sse("done", {"response": final_content, "tool_log": tool_log, "model_used": model_id,
-                               "session_locked": sid in session_model_lock, "perf": _perf})
+                               "session_locked": sid in session_model_lock, "perf": _perf,
+                               "completion_status": _completion})
 
         except Exception as e:
             err_str = str(e)

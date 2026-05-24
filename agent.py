@@ -306,25 +306,11 @@ class EveAgent:
             )
 
         # 5. Call LLM — use tools when message implies an action or capability question
-        action_keywords = [
-            # Explicit actions
-            "search", "browse", "open", "run", "execute", "find", "read", "write",
-            "edit", "create", "delete", "file", "shell", "fetch", "stock", "crypto",
-            "market", "portfolio", "trade", "email", "campaign", "design", "post",
-            # Filesystem / system inspection
-            "list", "show", "inspect", "check", "container", "directory", "folder",
-            "path", "access", "command", "terminal", "what's in", "whats in",
-            # Capability questions
-            "can you", "are you able", "do you have", "what tools", "what can you",
-            # Web / research
-            "lookup", "look up", "look at", "url", "website", "webpage", "scrape",
-            # DJ / music mixer
-            "play", "pause", "mix", "dj", "deck", "crossfade", "crossfader",
-            "bpm", "track", "cue", "loop", "effect", "fx", "transition",
-            "volume", "eq", "filter", "scratch", "sync", "load",
-        ]
+        from eve_tool_router import classify_intent
+        _needs_tools, _intent_cat = classify_intent(message)
         # Disable tools for vision requests — tools + images confuse the model
-        needs_tools = False if has_vision else any(kw in message.lower() for kw in action_keywords)
+        needs_tools = False if has_vision else _needs_tools
+        logger.debug(f"Tool routing: intent={_intent_cat} needs_tools={needs_tools}")
         response = await self._generate_with_tool_loop(
             messages, system_prompt, user_id, use_tools=needs_tools
         )
@@ -436,20 +422,10 @@ class EveAgent:
         yield {"type": "routing", "complexity": complexity, "model": route["model"]}
 
         # Check if we need tools
-        action_keywords = [
-            "search", "browse", "open", "run", "execute", "find", "read", "write",
-            "edit", "create", "delete", "file", "shell", "fetch", "stock", "crypto",
-            "market", "portfolio", "trade", "email", "campaign", "design", "post",
-            "list", "show", "inspect", "check", "container", "directory", "folder",
-            "path", "access", "command", "terminal", "what's in", "whats in",
-            "can you", "are you able", "do you have", "what tools", "what can you",
-            "lookup", "look up", "look at", "url", "website", "webpage", "scrape",
-            # DJ / music mixer
-            "play", "pause", "mix", "dj", "deck", "crossfade", "crossfader",
-            "bpm", "track", "cue", "loop", "effect", "fx", "transition",
-            "volume", "eq", "filter", "scratch", "sync", "load",
-        ]
-        needs_tools = False if has_vision else any(kw in message.lower() for kw in action_keywords)
+        from eve_tool_router import classify_intent
+        _needs_tools, _intent_cat = classify_intent(message)
+        needs_tools = False if has_vision else _needs_tools
+        logger.debug(f"Stream tool routing: intent={_intent_cat} needs_tools={needs_tools}")
 
         # Tool path: run loop as background task so activity updates can stream live
         if needs_tools:
@@ -669,15 +645,30 @@ class EveAgent:
         MAX_CTX_MSGS  = 10
 
         def _trim_context(msgs: list) -> list:
-            # Trim by message count first
-            while len(msgs) > MAX_CTX_MSGS:
-                msgs.pop(1)
-            # Then trim by char budget
-            total = sum(len(m.content or "") for m in msgs)
-            while total > MAX_CTX_CHARS and len(msgs) > 4:
-                dropped = msgs.pop(1)
+            """Smart trim: preserve tool calls/results and last 3 turns."""
+            if len(msgs) <= 4:
+                return msgs
+
+            # Build the critical set (indices we must keep)
+            critical: set[int] = {0}  # always keep the original request
+            for i, m in enumerate(msgs[1:], 1):
+                if getattr(m, "tool_calls", None):
+                    critical.add(i)
+                elif getattr(m, "role", None) == "tool":
+                    critical.add(i)
+            # Keep last 3 messages regardless of role
+            for i in range(max(1, len(msgs) - 3), len(msgs)):
+                critical.add(i)
+
+            trimmed = [msgs[i] for i in sorted(critical)]
+
+            # Fall back to char-based trimming if still over budget
+            total = sum(len(m.content or "") for m in trimmed)
+            while total > MAX_CTX_CHARS and len(trimmed) > 4:
+                dropped = trimmed.pop(1)
                 total -= len(dropped.content or "")
-            return msgs
+
+            return trimmed
 
         tool_defs = self.tools.get_tool_definitions()
         self._stream_activity = {"phase": "thinking", "detail": "Reasoning about your request…"}
