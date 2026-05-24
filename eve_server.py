@@ -2067,6 +2067,7 @@ CUSTOM INSTRUCTIONS:
                             yield sse("thinking", {"content": t_flush})
                         if c_flush:
                             content += c_flush
+                            yield sse("chunk", {"content": c_flush})
                     if _stopped:
                         break
                     # promote_thinking: if model put response in thinking field (e.g. 397B cloud)
@@ -2119,6 +2120,7 @@ CUSTOM INSTRUCTIONS:
                             yield sse("thinking", {"content": t_flush})
                         if c_flush:
                             content += c_flush
+                            yield sse("chunk", {"content": c_flush})
                     if _stopped:
                         break
                     # promote_thinking: if model put response in thinking field

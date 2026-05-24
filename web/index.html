@@ -1680,11 +1680,11 @@ userInput.addEventListener('keydown', async (e) => {
                     const c=this.querySelector('.think-chevron');
                     b.classList.toggle('open'); c.classList.toggle('open');
                   ">
-                    <span class="think-chevron">▶</span>
+                    <span class="think-chevron open">▶</span>
                     🧠 <span style="color:#a78bfa">Thinking</span>
                     <span class="think-token-count" id="${msgId}-think-tokens"></span>
                   </div>
-                  <div class="think-body" id="${msgId}-think-body"></div>`;
+                  <div class="think-body open" id="${msgId}-think-body"></div>`;
                 // Insert before the response div
                 liveResponse.parentNode.insertBefore(thinkBlock, liveResponse);
               }
@@ -1747,12 +1747,14 @@ userInput.addEventListener('keydown', async (e) => {
             } else if (data.type === 'done') {
               hideSteerBar();
               setStatusDot('idle');
-              if (!fullContent && data.response) {
+              // Always sync liveResponse to server's clean response (strips any leaked <think> tags)
+              if (data.response) {
                 fullContent = data.response;
                 liveResponse.innerHTML = formatResponse(fullContent);
               }
-              // Create think box from extracted_thinking if streaming didn't produce one
-              if (data.extracted_thinking && !document.getElementById(msgId + '-think')) {
+              // Fallback: create think box from extracted_thinking if streaming didn't produce one
+              const _thinkSrc = data.extracted_thinking || fullThinking;
+              if (_thinkSrc && !document.getElementById(msgId + '-think')) {
                 const thinkBlock = document.createElement('div');
                 thinkBlock.className = 'think-block';
                 thinkBlock.id = msgId + '-think';
@@ -1764,12 +1766,19 @@ userInput.addEventListener('keydown', async (e) => {
                   ">
                     <span class="think-chevron">▶</span>
                     🧠 <span style="color:#a78bfa">Thinking</span>
-                    <span class="think-token-count" id="${msgId}-think-tokens">~${Math.round(data.extracted_thinking.length/4)} tokens</span>
+                    <span class="think-token-count" id="${msgId}-think-tokens">~${Math.round(_thinkSrc.length/4)} tokens</span>
                   </div>
                   <div class="think-body" id="${msgId}-think-body"></div>`;
                 const thinkBody = thinkBlock.querySelector('.think-body');
-                if (thinkBody) thinkBody.textContent = data.extracted_thinking;
+                if (thinkBody) thinkBody.textContent = _thinkSrc;
                 liveResponse.parentNode.insertBefore(thinkBlock, liveResponse);
+              }
+              // Collapse any open think box now that response is complete
+              const _existingThink = document.getElementById(msgId + '-think-body');
+              if (_existingThink && _existingThink.classList.contains('open')) {
+                _existingThink.classList.remove('open');
+                const _chev = document.querySelector('#' + msgId + '-think .think-chevron');
+                if (_chev) _chev.classList.remove('open');
               }
               modelUsed = data.model_used || modelUsed;
               // Lock badge
