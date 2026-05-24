@@ -402,7 +402,8 @@ LARGE_OUTPUT_PATTERNS = [
     r'\b(\d{2,})\s*(lines?|rows?)\b',           # "100 lines", "50 lines"
     r'\bgenerate\b.*\b(script|file|class|module|program)\b',  # "generate a script"
     r'\b(need|want|make|build|create|write|develop|code)\b.*\b(script|program|app|application|project)\b',  # "I need a script"
-    r'\b(make|create|build|write|code|develop)\b.*\b(calculator|game|tool|widget|utility|gui|interface|dashboard|website|page|form|chart|graph|report|bot|scraper|parser|converter|validator|generator|monitor|scheduler|automation|pipeline|workflow|plugin|extension|library|module|component|service|cli|menu|dropdown|button|table|grid|slider|timer|clock|counter|tracker|viewer|editor|player|recorder|scanner|analyzer|optimizer|simulator|emulator|compiler|interpreter)\b',
+    r'\b(need|want|give me|make me|build me|write me|show me)\b.*\b(script|program|app|application|project|calculator|game|tool|widget|utility|gui|interface|dashboard|website|bot|scraper|parser|converter|generator|automation|pipeline|plugin|library|service|cli)\b',  # "I need a calculator"
+    r'\b(make|create|build|write|code|develop|need|want)\b.*\b(calculator|game|tool|widget|utility|gui|interface|dashboard|website|page|form|chart|graph|report|bot|scraper|parser|converter|validator|generator|monitor|scheduler|automation|pipeline|workflow|plugin|extension|library|module|component|service|cli|menu|dropdown|button|table|grid|slider|timer|clock|counter|tracker|viewer|editor|player|recorder|scanner|analyzer|optimizer|simulator|emulator|compiler|interpreter)\b',
     r'\bpython\s+script\b',                      # "python script"
     r'\bcreate\b.*\b(full|complete|entire|script|app|project)\b',  # "create a script/project"
     r'\bwrite\b.*\b(full|complete|entire|script|code|program)\b',  # "write a script"
@@ -411,7 +412,8 @@ LARGE_OUTPUT_PATTERNS = [
     # Any coding language mention with generation intent → qwen3-coder:480b-cloud
     r'\b(python|javascript|typescript|rust|go|java|c\+\+|csharp|ruby|php|swift|kotlin|dart|scala|html|css|react|vue|angular|node|flask|django|fastapi|express)\b.*\b(script|code|file|class|function|module|app|project|program|api)\b',
     r'\b(script|code|file|class|function|module|app|project|program|api|component|endpoint|server|client|service|handler|controller|middleware|route)\b.*\b(python|javascript|typescript|rust|go|java|c\+\+|csharp|ruby|php|swift|kotlin|dart|scala|react|vue|angular|node|flask|django|fastapi|express)\b',
-    r'\b(create|build|make|write|code|implement|develop)\b.*\b(api|component|server|endpoint|service|backend|frontend|database|schema|model)\b',
+    r'\b(in|using|with|via)\s+(python|javascript|typescript|rust|go|java|c\+\+|csharp|ruby|php|swift|kotlin|dart|scala|react|vue|angular|node|flask|django|fastapi|express)\b',  # "in Python", "using JavaScript", "made in Rust"
+    r'\b(create|build|make|write|code|implement|develop|need|want)\b.*\b(api|component|server|endpoint|service|backend|frontend|database|schema|model)\b',
     r'\brefactor\b.*\bentire\b',                 # "refactor the entire..."
     r'\b(rewrite|rebuild)\b',                    # rewrite/rebuild tasks
     # Large file operations
