@@ -1366,6 +1366,61 @@ async def models():
     return {"models": list(MODELS.values())}
 
 
+class _InlineThinkExtractor:
+    """Split a streaming content feed into (content, thinking) by detecting
+    inline <think>...</think> blocks.  Handles tags split across chunk boundaries."""
+
+    def __init__(self):
+        self._buf = ""
+        self._in_think = False
+        self._think_acc = ""
+
+    def feed(self, chunk: str) -> tuple:
+        """Return (content_to_emit, thinking_to_emit). Either may be ''."""
+        self._buf += chunk
+        content_out = ""
+        thinking_out = ""
+        OPEN, CLOSE = "<think>", "</think>"
+
+        while True:
+            if not self._in_think:
+                idx = self._buf.find(OPEN)
+                if idx == -1:
+                    safe_end = max(0, len(self._buf) - len(OPEN))
+                    content_out += self._buf[:safe_end]
+                    self._buf = self._buf[safe_end:]
+                    break
+                content_out += self._buf[:idx]
+                self._buf = self._buf[idx + len(OPEN):]
+                self._in_think = True
+                self._think_acc = ""
+            else:
+                idx = self._buf.find(CLOSE)
+                if idx == -1:
+                    safe_end = max(0, len(self._buf) - len(CLOSE))
+                    self._think_acc += self._buf[:safe_end]
+                    self._buf = self._buf[safe_end:]
+                    break
+                self._think_acc += self._buf[:idx]
+                thinking_out += self._think_acc.strip()
+                self._buf = self._buf[idx + len(CLOSE):]
+                self._in_think = False
+                self._think_acc = ""
+
+        return content_out, thinking_out
+
+    def flush(self) -> tuple:
+        """Flush remaining buffer at stream end."""
+        if self._in_think:
+            t = (self._think_acc + self._buf).strip()
+            self._buf = self._think_acc = ""
+            self._in_think = False
+            return "", t
+        c = self._buf
+        self._buf = ""
+        return c, ""
+
+
 async def _iter_ollama_async(client, chat_kwargs: dict, sid: str):
     """Iterate a sync Ollama streaming response in a thread so the event loop
     stays free. Without this, each next(stream) call blocks the event loop and
@@ -1882,6 +1937,7 @@ CUSTOM INSTRUCTIONS:
     async def generate():
         nonlocal msgs, model_cfg, model_id, client
         final_content = ""
+        final_thinking = ""
         tool_log = []
         _perf = {"start": time.time(), "rounds": 0, "tool_calls": 0, "tool_errors": 0, "retries": 0}
         _call_counts: dict = {}  # (fn, args_key) → count; loop detection
@@ -1978,6 +2034,7 @@ CUSTOM INSTRUCTIONS:
                     thinking = ""
                     content = ""
                     tc_list = []
+                    _think_extractor = _InlineThinkExtractor()
 
                     _stopped = False
                     async for chunk in _iter_ollama_async(client, ck, sid):
@@ -1994,10 +2051,22 @@ CUSTOM INSTRUCTIONS:
                             thinking += t
                             yield sse("thinking", {"content": t})
                         if c:
-                            content += c
-                            yield sse("chunk", {"content": c})
+                            c_out, t_out = _think_extractor.feed(c)
+                            if t_out:
+                                thinking += t_out
+                                yield sse("thinking", {"content": t_out})
+                            if c_out:
+                                content += c_out
+                                yield sse("chunk", {"content": c_out})
                         if tcs:
                             tc_list.extend(tcs)
+                    if not _stopped:
+                        c_flush, t_flush = _think_extractor.flush()
+                        if t_flush:
+                            thinking += t_flush
+                            yield sse("thinking", {"content": t_flush})
+                        if c_flush:
+                            content += c_flush
                     if _stopped:
                         break
                     # promote_thinking: if model put response in thinking field (e.g. 397B cloud)
@@ -2018,6 +2087,7 @@ CUSTOM INSTRUCTIONS:
                     thinking = ""
                     content = ""
                     tc_list = []
+                    _think_extractor = _InlineThinkExtractor()
                     _stopped = False
                     async for chunk in _iter_ollama_async(client, ck, sid):
                         if session_cancel.get(sid):
@@ -2033,10 +2103,22 @@ CUSTOM INSTRUCTIONS:
                             thinking += t
                             yield sse("thinking", {"content": t})
                         if c:
-                            content += c
-                            yield sse("chunk", {"content": c})
+                            c_out, t_out = _think_extractor.feed(c)
+                            if t_out:
+                                thinking += t_out
+                                yield sse("thinking", {"content": t_out})
+                            if c_out:
+                                content += c_out
+                                yield sse("chunk", {"content": c_out})
                         if tcs:
                             tc_list.extend(tcs)
+                    if not _stopped:
+                        c_flush, t_flush = _think_extractor.flush()
+                        if t_flush:
+                            thinking += t_flush
+                            yield sse("thinking", {"content": t_flush})
+                        if c_flush:
+                            content += c_flush
                     if _stopped:
                         break
                     # promote_thinking: if model put response in thinking field
@@ -2213,6 +2295,8 @@ CUSTOM INSTRUCTIONS:
                         break
 
                     final_content = content or thinking  # surface thinking if content is empty
+                    if thinking:
+                        final_thinking += thinking
                     # Auto-continuation: nudge if model described actions without calling tools.
                     # Caps at 3 nudges — after that the model clearly won't call tools, so stop.
                     if supports_tools and content and _nudge_count < 3 and not _thinking_promoted:
@@ -2282,7 +2366,8 @@ CUSTOM INSTRUCTIONS:
                 yield sse("validation_warning", {"warnings": _completion["warnings"]})
 
             _perf["wall_s"] = round(time.time() - _perf.pop("start"), 2)
-            yield sse("done", {"response": final_content, "tool_log": tool_log, "model_used": model_id,
+            yield sse("done", {"response": final_content, "extracted_thinking": final_thinking,
+                               "tool_log": tool_log, "model_used": model_id,
                                "session_locked": sid in session_model_lock, "perf": _perf,
                                "completion_status": _completion})
 

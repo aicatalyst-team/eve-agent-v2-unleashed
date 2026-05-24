@@ -1751,6 +1751,26 @@ userInput.addEventListener('keydown', async (e) => {
                 fullContent = data.response;
                 liveResponse.innerHTML = formatResponse(fullContent);
               }
+              // Create think box from extracted_thinking if streaming didn't produce one
+              if (data.extracted_thinking && !document.getElementById(msgId + '-think')) {
+                const thinkBlock = document.createElement('div');
+                thinkBlock.className = 'think-block';
+                thinkBlock.id = msgId + '-think';
+                thinkBlock.innerHTML =
+                  `<div class="think-block-header" onclick="
+                    const b=document.getElementById('${msgId}-think-body');
+                    const c=this.querySelector('.think-chevron');
+                    b.classList.toggle('open'); c.classList.toggle('open');
+                  ">
+                    <span class="think-chevron">▶</span>
+                    🧠 <span style="color:#a78bfa">Thinking</span>
+                    <span class="think-token-count" id="${msgId}-think-tokens">~${Math.round(data.extracted_thinking.length/4)} tokens</span>
+                  </div>
+                  <div class="think-body" id="${msgId}-think-body"></div>`;
+                const thinkBody = thinkBlock.querySelector('.think-body');
+                if (thinkBody) thinkBody.textContent = data.extracted_thinking;
+                liveResponse.parentNode.insertBefore(thinkBlock, liveResponse);
+              }
               modelUsed = data.model_used || modelUsed;
               // Lock badge
               const lockBadge = document.getElementById('lock-badge');
