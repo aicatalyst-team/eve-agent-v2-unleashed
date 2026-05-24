@@ -19,10 +19,10 @@ ENV EVE_WORKSPACE=/workspace
 ENV EVE_IN_DOCKER=1
 ENV OLLAMA_BASE_URL=http://ollama:11434
 ENV OLLAMA_HOST=http://ollama:11434
-ENV OLLAMA_MODEL=eve-unleashed
+ENV OLLAMA_MODEL=jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest
 ENV EVE_DEFAULT_PROVIDER=ollama
-ENV EVE_DEFAULT_MODEL=eve-unleashed
-ENV LOCAL_MODEL=eve-unleashed
+ENV EVE_DEFAULT_MODEL=jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest
+ENV LOCAL_MODEL=jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest
 ENV LOCAL_OLLAMA_URL=http://ollama:11434
 ENV PYTHONUNBUFFERED=1
 

@@ -2166,19 +2166,25 @@ CUSTOM INSTRUCTIONS:
             import traceback
             traceback.print_exc()
 
-            # Detect auth / connection / model-not-found failures on cloud models and auto-fallback
-            is_auth_err = any(x in err_str.lower() for x in
+            # Model not installed locally → give user the exact pull command
+            is_model_not_found = "404" in err_str and "not found" in err_str.lower()
+            if is_model_not_found and not model_cfg.get("cloud"):
+                pull_cmd = f"ollama pull {model_id}"
+                yield sse("error", {
+                    "message": f"⚠️ Model not installed: **{model_id}**\n\nInstall it with:\n```\n{pull_cmd}\n```\nThen restart eve_server.py.",
+                    "error_code": "model_not_installed",
+                    "pull_command": pull_cmd,
+                })
+            # Cloud model auth / connection failures → fallback to local
+            elif model_cfg.get("cloud") and any(x in err_str.lower() for x in
                               ("401", "unauthorized", "forbidden", "403",
                                "connection refused", "connection error",
                                "remotedisconnected", "connectionreset",
-                               "internal server error", "status code: -1", "500"))
-            if model_cfg.get("cloud") and is_auth_err:
-                fallback = "Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged"
-                logger.warning(f"☁ Cloud model '{model_id}' auth/connection failed — falling back to {fallback}")
+                               "internal server error", "status code: -1", "500")):
+                fallback = "jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest"
+                logger.warning(f"☁ Cloud model '{model_id}' failed — falling back to {fallback}")
                 yield sse("error", {
-                    "message": f"☁ '{model_id}' failed (server error or model not found on Ollama.com). "
-                               f"Verify the model name at ollama.com/library. "
-                               f"Falling back to local {fallback}...",
+                    "message": f"☁ '{model_id}' failed. Check your Ollama API key in ⚙ Settings → API Keys.\nFalling back to local {fallback}...",
                     "fallback": fallback,
                 })
             else:

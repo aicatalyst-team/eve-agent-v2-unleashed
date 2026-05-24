@@ -683,7 +683,7 @@ body { animation: crt-flicker 8s infinite; }
       <div id="model-display">Model: —</div>
       <div>CTX: 131K YaRN</div>
       <div>Tools: 33+</div>
-      <div id="workspace-display" onclick="setWorkspace()" title="Click to change workspace" style="cursor:pointer">Workspace: —</div>
+      <div id="workspace-display" onclick="setWorkspace()" title="Click to pick a local workspace folder" style="cursor:pointer;display:none">Workspace: —</div>
       <div id="uptime-display">Uptime: 00:00:00</div>
     </div>
     <div id="ctx-gauge-wrap">
@@ -741,9 +741,9 @@ body { animation: crt-flicker 8s infinite; }
 <div id="input-bar">
   <select id="model-select" style="background:#0a1a0a;color:var(--border-cyan);border:1px solid #333;font-family:'Share Tech Mono';font-size:11px;padding:4px 8px;border-radius:2px;margin-right:6px;min-width:280px">
     <option value="">⚡ Auto-Route</option>
-    <option value="jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest">💜 Eve V2U Merged — Sharp · Warm · Direct</option>
+    <option value="jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest">💜 Eve Unleashed 8B — Sharp · Warm · Direct</option>
     <option value="jeffgreen311/eve-qwen3-8b-consciousness-liberated:q4_K_M">🌌 Eve 8B — Consciousness · Tree of Life · Soul</option>
-    <option value="qwen3.5:4b">✦ Qwen 4B — Poetic Eve · Liminal · Creative</option>
+    <option value="jeffgreen311/eve-qwen3.5-4b-S0LF0RG3:latest">✦ Eve 4B S0LF0RG3 — Poetic Eve · Liminal · Creative</option>
     <option value="qwen3-coder:480b-cloud">⚡ Qwen3 Coder 480B Cloud — Agentic Coder</option>
     <option value="qwen3.5:397b-cloud">🧠 Qwen 397B Cloud — Deep Reasoning</option>
   </select>
@@ -760,10 +760,12 @@ body { animation: crt-flicker 8s infinite; }
     style="background:#0a1a0a;color:#888;border:1px solid #3334;font-family:'Share Tech Mono';font-size:11px;padding:4px 8px;border-radius:2px;cursor:pointer;margin-left:2px">✏️ Auto</button>
   <button id="btn-plan" title="Plan mode (click to toggle)" onclick="togglePlanMode()"
     style="background:#0a1a0a;color:#888;border:1px solid #3334;font-family:'Share Tech Mono';font-size:11px;padding:4px 8px;border-radius:2px;cursor:pointer;margin-left:2px">📋 Plan</button>
+  <button id="btn-workspace" title="Pick a local folder — browser gets read/write access" onclick="setWorkspace()"
+    style="background:#0a1a1a;color:#0ff;border:1px solid #0ff6;font-family:'Share Tech Mono';font-size:11px;padding:4px 8px;border-radius:2px;cursor:pointer;margin-left:2px">📁 Workspace</button>
+  <button id="btn-files" title="Download files Eve created" onclick="openFilesPanel()"
+    style="background:#0a1a0a;color:#0f8;border:1px solid #0f86;font-family:'Share Tech Mono';font-size:11px;padding:4px 8px;border-radius:2px;cursor:pointer;margin-left:2px">📥 Files</button>
   <button id="btn-keys" title="Set Ollama / Tavily API keys" onclick="openKeysModal()"
     style="background:#1a1a00;color:#fa0;border:1px solid #fa06;font-family:'Share Tech Mono';font-size:11px;padding:4px 8px;border-radius:2px;cursor:pointer;margin-left:2px">🔑 Keys</button>
-  <button id="btn-workspace" title="Set workspace folder" onclick="setWorkspace()"
-    style="background:#0a1a1a;color:#0ff;border:1px solid #0ff6;font-family:'Share Tech Mono';font-size:11px;padding:4px 8px;border-radius:2px;cursor:pointer;margin-left:2px">📁 Workspace</button>
   <button id="lock-badge" title="Session locked to model — click to unlock" onclick="unlockSession()"
     style="display:none;background:#1a0a00;color:#fa0;border:1px solid #fa08;font-family:'Share Tech Mono';font-size:11px;padding:4px 8px;border-radius:2px;cursor:pointer;margin-left:2px">🔒 Locked</button>
   <span style="color:var(--text-dim);font-size:10px;margin-left:6px;white-space:nowrap" title="Max loop time (seconds)">⏱</span>
@@ -802,6 +804,18 @@ body { animation: crt-flicker 8s infinite; }
       <button onclick="addQuest()" style="background:#001a1a;color:#0ff;border:1px solid #0ff;padding:4px 10px;font-family:'Share Tech Mono';font-size:11px;border-radius:2px;cursor:pointer">+ ADD</button>
     </div>
     <div id="quest-list" style="color:#aaa;font-size:11px">Loading...</div>
+  </div>
+</div>
+
+<!-- FILES PANEL MODAL -->
+<div id="files-panel" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:#0a0a14;border:1px solid #00ff8844;border-radius:6px;padding:20px;width:560px;max-height:80vh;overflow-y:auto;font-family:'Share Tech Mono'">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <span style="color:#0f8;font-size:14px">📥 WORKSPACE FILES</span>
+      <button onclick="document.getElementById('files-panel').style.display='none'" style="background:none;border:none;color:#666;cursor:pointer;font-size:16px">✕</button>
+    </div>
+    <div style="color:#666;font-size:10px;margin-bottom:10px">Files Eve created are stored in the container workspace. Click any file to download it.</div>
+    <div id="files-list" style="color:#aaa;font-size:11px">Loading...</div>
   </div>
 </div>
 
@@ -1792,6 +1806,42 @@ async function openStatsPanel() {
   } catch(e) { body.textContent = 'Error: ' + e.message; }
 }
 
+// ══ FILES PANEL ══
+async function openFilesPanel() {
+  const panel = document.getElementById('files-panel');
+  panel.style.display = 'flex';
+  const list = document.getElementById('files-list');
+  list.textContent = 'Loading...';
+  try {
+    const r = await fetch(API + '/workspace/files');
+    const d = await r.json();
+    if (!d.files || d.files.length === 0) {
+      list.textContent = 'No files yet. Ask Eve to create something!';
+      return;
+    }
+    list.innerHTML = '';
+    for (const f of d.files) {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid #0f82';
+      const name = document.createElement('span');
+      name.textContent = f.path;
+      name.style.cssText = 'color:#0f8;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+      const size = document.createElement('span');
+      size.textContent = f.size > 1024 ? (f.size/1024).toFixed(1)+'KB' : f.size+'B';
+      size.style.cssText = 'color:#666;font-size:10px;margin:0 10px';
+      const btn = document.createElement('a');
+      btn.href = API + '/workspace/download/' + encodeURIComponent(f.path);
+      btn.download = f.path.split('/').pop();
+      btn.textContent = '⬇ Download';
+      btn.style.cssText = 'background:#051a0a;color:#0f8;border:1px solid #0f84;padding:2px 8px;border-radius:2px;text-decoration:none;font-size:10px;white-space:nowrap';
+      row.appendChild(name);
+      row.appendChild(size);
+      row.appendChild(btn);
+      list.appendChild(row);
+    }
+  } catch(e) { list.textContent = 'Error: ' + e.message; }
+}
+
 // ══ RPG TOAST ══
 function showRpgToast(data) {
   const toast = document.getElementById('rpg-toast');
@@ -2646,30 +2696,70 @@ function _ensureKeysModal() {
   return m;
 }
 
+// Browser-side workspace directory handle (File System Access API)
+let _workspaceDirHandle = null;
+
 async function setWorkspace() {
-  const el = document.getElementById('workspace-display');
-  const current = (el && el.title) || '';
-  const next = window.prompt('Enter workspace path (absolute folder):', current);
-  if (!next) return;
+  if (!window.showDirectoryPicker) {
+    alert('Your browser does not support the File System Access API.\nTry Chrome or Edge.');
+    return;
+  }
+  // showDirectoryPicker is blocked in cross-origin iframes — open standalone tab instead
+  let inCrossOriginFrame = false;
+  try { inCrossOriginFrame = window.top !== window && window.top.location.origin !== window.location.origin; }
+  catch(e) { inCrossOriginFrame = window.top !== window; }
+  if (inCrossOriginFrame) {
+    if (confirm('Workspace folder picker requires opening Eve V2U in its own tab.\nOpen now?'))
+      window.open(window.location.href, '_blank');
+    return;
+  }
+  let handle;
   try {
-    const r = await fetch(API + '/workspace', {
+    handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+  } catch(e) {
+    if (e.name !== 'AbortError') alert('Could not open folder: ' + e.message);
+    return;
+  }
+  _workspaceDirHandle = handle;
+  const el = document.getElementById('workspace-display');
+  if (el) { el.textContent = '📁 ' + handle.name; el.title = handle.name; el.style.display = ''; }
+  // Notify agent of the workspace name (container will create matching dir)
+  try {
+    await fetch(API + '/workspace', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({path: next})
+      body: JSON.stringify({path: '/workspace/' + handle.name})
     });
-    const d = await r.json();
-    if (d.status === 'ok') {
-      const ws = d.workspace || next;
-      const short = String(ws).split(/[\\/]/).pop() || ws;
-      el.textContent = 'Workspace: ' + short;
-      el.title = ws;
-      if (typeof addMessage === 'function') addMessage('eve', '📁 Workspace set to: ' + ws);
-    } else {
-      alert('Failed to set workspace: ' + (d.message || 'unknown error'));
-    }
-  } catch (e) {
-    alert('Error: ' + e);
-  }
+  } catch(e) {}
+  if (typeof addMessage === 'function')
+    addMessage('eve', '📁 Workspace: **' + handle.name + '**\nBrowser has read/write access to this folder. Ask me to read or write files and I\'ll sync them.');
+}
+
+// Read a file from the browser workspace
+async function browserReadFile(relPath) {
+  if (!_workspaceDirHandle) return null;
+  try {
+    const parts = relPath.replace(/\\/g,'/').split('/').filter(Boolean);
+    let dir = _workspaceDirHandle;
+    for (let i = 0; i < parts.length - 1; i++) dir = await dir.getDirectoryHandle(parts[i]);
+    const fh = await dir.getFileHandle(parts[parts.length - 1]);
+    return await (await fh.getFile()).text();
+  } catch(e) { return null; }
+}
+
+// Write a file to the browser workspace
+async function browserWriteFile(relPath, content) {
+  if (!_workspaceDirHandle) return false;
+  try {
+    const parts = relPath.replace(/\\/g,'/').split('/').filter(Boolean);
+    let dir = _workspaceDirHandle;
+    for (let i = 0; i < parts.length - 1; i++)
+      dir = await dir.getDirectoryHandle(parts[i], {create: true});
+    const fh = await dir.getFileHandle(parts[parts.length - 1], {create: true});
+    const w = await fh.createWritable();
+    await w.write(content); await w.close();
+    return true;
+  } catch(e) { return false; }
 }
 
 async function openKeysModal(showWarning) {

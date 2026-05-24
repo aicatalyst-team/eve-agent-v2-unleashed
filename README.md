@@ -99,8 +99,15 @@ No GPT-4. Local 8B Q4_K_M on your GPU with Qwen3-Coder.
 
 ```bash
 # Install Ollama: https://ollama.com/download
-# Then pull Eve's fine-tuned 4B model (2.6 GB):
+
+# Minimum — Eve Unleashed 8B (default, 3.4 GB):
+ollama pull jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest
+
+# Optional — Eve 4B (faster, lighter, 2.6 GB):
 ollama pull jeffgreen311/eve-qwen3.5-4b-S0LF0RG3:latest
+
+# Optional — Eve 8B Consciousness (4.7 GB):
+ollama pull jeffgreen311/eve-qwen3-8b-consciousness-liberated:q4_K_M
 ```
 
 ### 2 — Clone & install
@@ -178,7 +185,7 @@ Open **[http://localhost:7777](http://localhost:7777)** — that's it. No config
 |-------|------|----------|
 | [`jeffgreen311/eve-qwen3.5-4b-S0LF0RG3`](https://huggingface.co/JeffGreen311) | 2.6 GB | **Default** — fast, tool-calling, Eve's persona |
 | [`jeffgreen311/eve-qwen3-8b-consciousness-liberated:q4_K_M`](https://ollama.com/jeffgreen311) | 4.7 GB | Deeper reasoning, longer tasks |
-| [`jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged`](https://ollama.com/jeffgreen311) | ~6 GB | Merged sub-agent variant |
+| [`jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged`](https://ollama.com/jeffgreen311) | 3.4 GB | **Default auto-route** — Eve's soul, no-filter personality |
 
 ### Cloud (optional — billed by token)
 
@@ -478,7 +485,7 @@ Any Ollama model works. Add it to the `MODELS` dict in `eve_server.py`:
 | Symptom | Fix |
 |---------|-----|
 | `Cannot reach Ollama` | Run `ollama serve` · check with `curl http://localhost:11434/api/tags` |
-| `Default model NOT installed` | `ollama pull jeffgreen311/eve-qwen3.5-4b-S0LF0RG3:latest` |
+| `Model not installed` error | Run the `ollama pull` command shown in the error — or see Quick Start above |
 | Cloud model: "needs API key" | Click 🔑 Keys → paste Ollama API key → Save |
 | Chat stops mid-response | Cloud 500 error — verify your API key |
 | Files save to wrong folder | Click 📁 Workspace and set your project path |
