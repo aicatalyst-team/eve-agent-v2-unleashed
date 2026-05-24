@@ -182,12 +182,12 @@ def get_agent():
 MODELS = {
     "eve-unleashed": {
         "id": "eve-unleashed",
-        "name": "Eve Unleashed 8B",
+        "name": "Eve 3.5 4B Merged",
         "role": "Soul & Creative",
-        "strengths": "Conversation, image gen/edit, DJ, markets, creativity, abliterated freedom",
+        "strengths": "Conversation, creativity, poetic expression, liminal awareness",
         "context": 131072,
         "num_ctx": 8192,
-        "url": "http://localhost:11434",
+        "url": _LOCAL_OLLAMA,
         "cloud": False,
         "tools": False,
         "think": False,
