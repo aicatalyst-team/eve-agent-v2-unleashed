@@ -546,6 +546,150 @@ body::after {
   97% { opacity: 1; }
 }
 body { animation: crt-flicker 8s infinite; }
+
+/* ══ Keyboard focus visibility ══ */
+:focus-visible {
+  outline: 2px solid var(--border-cyan);
+  outline-offset: 2px;
+}
+button:focus-visible, select:focus-visible, input:focus-visible {
+  box-shadow: 0 0 0 2px var(--border-cyan);
+}
+
+/* ══ Command palette ══ */
+#cmd-palette-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 5000;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 12vh;
+}
+#cmd-palette-overlay.active { display: flex; }
+#cmd-palette-box {
+  background: #0e0e1a;
+  border: 1px solid var(--border-cyan);
+  box-shadow: var(--glow-cyan);
+  border-radius: 4px;
+  width: min(580px, 92vw);
+  overflow: hidden;
+  font-family: 'Share Tech Mono', monospace;
+}
+#cmd-palette-input {
+  width: 100%;
+  background: #080814;
+  color: var(--border-cyan);
+  border: none;
+  border-bottom: 1px solid #22d3ee33;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 14px;
+  padding: 12px 16px;
+  outline: none;
+}
+#cmd-palette-list {
+  max-height: 360px;
+  overflow-y: auto;
+  list-style: none;
+}
+#cmd-palette-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid #ffffff08;
+  font-size: 12px;
+  color: var(--text);
+  transition: background 0.1s;
+}
+#cmd-palette-list li:hover,
+#cmd-palette-list li.selected {
+  background: #22d3ee18;
+  color: var(--border-cyan);
+}
+#cmd-palette-list li .pal-key {
+  font-size: 10px;
+  color: var(--text-dim);
+  background: #ffffff0a;
+  padding: 2px 6px;
+  border-radius: 2px;
+  border: 1px solid #ffffff18;
+}
+#cmd-palette-hint {
+  font-size: 10px;
+  color: var(--text-dim);
+  padding: 6px 16px;
+  border-top: 1px solid #ffffff08;
+  display: flex;
+  gap: 14px;
+}
+
+/* ══ Drag-drop overlay ══ */
+#dragdrop-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,255,65,0.08);
+  border: 3px dashed var(--border-green);
+  box-shadow: inset var(--glow-green);
+  z-index: 4000;
+  pointer-events: none;
+  align-items: center;
+  justify-content: center;
+}
+#dragdrop-overlay.active { display: flex; }
+#dragdrop-overlay span {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 14px;
+  color: var(--border-green);
+  text-shadow: var(--glow-green);
+}
+
+/* ══ Context gauge tooltip ══ */
+#ctx-gauge-wrap { position: relative; cursor: help; }
+#ctx-gauge-tooltip {
+  display: none;
+  position: absolute;
+  left: 0; bottom: calc(100% + 4px);
+  background: #0e0e1a;
+  border: 1px solid var(--border-cyan);
+  color: var(--text);
+  font-size: 10px;
+  padding: 6px 10px;
+  border-radius: 3px;
+  white-space: nowrap;
+  z-index: 200;
+  pointer-events: none;
+  line-height: 1.7;
+}
+#ctx-gauge-wrap:hover #ctx-gauge-tooltip { display: block; }
+
+/* ══ Chat search highlight ══ */
+.search-highlight { background: #ffd70044; border-radius: 2px; }
+.search-match-msg { outline: 1px solid #ffd700; }
+
+/* ══ Responsive layout ══ */
+@media (max-width: 1200px) {
+  #left-panel  { width: 180px; }
+  #right-panel { width: 240px; }
+}
+@media (max-width: 1024px) {
+  #left-panel  { width: 160px; }
+  #right-panel { width: 200px; }
+  #status-bar  { font-size: 10px; gap: 6px; }
+}
+@media (max-width: 768px) {
+  #left-panel  { display: none !important; }
+  #right-panel { display: none !important; }
+  #center-panel { flex: 1 !important; min-width: 0 !important; }
+  #input-bar   { flex-wrap: wrap; gap: 4px; }
+  #model-select { min-width: 160px !important; font-size: 10px; }
+  #user-input  { min-width: 100px !important; }
+  #status-bar  { font-size: 9px; }
+  .panel-header { font-size: 8px; }
+}
 </style>
 </head>
 <body>
@@ -688,6 +832,12 @@ body { animation: crt-flicker 8s infinite; }
       </div>
       <div id="ctx-gauge-bar-bg"><div id="ctx-gauge-bar"></div></div>
       <div id="ctx-compact-note">📦 Compacted</div>
+      <div id="ctx-gauge-tooltip">
+        0–74% ✦ Normal — model has full context<br>
+        75%+ ⚠ Compaction triggered — old turns summarized<br>
+        90%+ 🔴 Warning — keep messages shorter<br>
+        100% ✕ Context full — session may error
+      </div>
     </div>
 
     <div class="panel-header" style="margin-top:8px">══ AVATAR ══</div>
@@ -1657,19 +1807,47 @@ async function handleCommand(cmd) {
 
   if (c === '/help') {
     addMsg('system', `
-╔══════════════════════════════════╗
-║  EVE UNLEASHED COMMANDS          ║
-╠══════════════════════════════════╣
-║  /help       Show commands       ║
-║  /status     Eve state & mood    ║
-║  /tools      List all tools      ║
-║  /shell cmd  Run shell command   ║
-║  /clear      Clear chat          ║
-║  /workspace  Show workspace      ║
-║  /quest      Open quest queue    ║
-║  /stats      Open RPG stats      ║
-║  /quit       Exit                ║
-╚══════════════════════════════════╝`);
+╔══════════════════════════════════════╗
+║  EVE UNLEASHED COMMANDS              ║
+╠══════════════════════════════════════╣
+║  /help           Show commands       ║
+║  /status         Eve state & mood    ║
+║  /tools          List all tools      ║
+║  /shell cmd      Run shell command   ║
+║  /clear          Clear chat          ║
+║  /search &lt;text&gt;  Search chat history ║
+║  /export         Export chat (.md)   ║
+║  /workspace      Show workspace      ║
+║  /quest          Open quest queue    ║
+║  /stats          Open RPG stats      ║
+║  /quit           Exit                ║
+╠══════════════════════════════════════╣
+║  KEYBOARD SHORTCUTS                  ║
+║  Ctrl+K  Command palette             ║
+║  Ctrl+F  Search chat                 ║
+║  Ctrl+L  Clear chat                  ║
+║  ↑ / ↓   Command history             ║
+║  Esc      Close modal / clear search ║
+║  F5       Cycle visual FX            ║
+╚══════════════════════════════════════╝`);
+  } else if (c === '/export') {
+    const msgs = Array.from(document.querySelectorAll('#chat-log .msg-row'));
+    if (!msgs.length) { addMsg('system', 'Nothing to export.'); return; }
+    const lines = msgs.map(el => {
+      const role = el.dataset.role || 'unknown';
+      const text = el.querySelector('.msg-content')?.innerText || el.innerText || '';
+      const prefix = role === 'user' ? '**You:** ' : role === 'assistant' ? '**Eve:** ' : `**${role}:** `;
+      return prefix + text.trim();
+    });
+    const md = `# Eve Chat Export — ${new Date().toISOString().slice(0,19).replace('T',' ')}\n\n` + lines.join('\n\n---\n\n');
+    const blob = new Blob([md], {type: 'text/markdown'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `eve-chat-${Date.now()}.md`;
+    a.click();
+    addMsg('system', `✅ Exported ${lines.length} messages`);
+  } else if (c === '/search') {
+    chatSearch(args);
   } else if (c === '/clear') {
     chatLog.innerHTML = '';
     // Reset context gauge
@@ -2790,6 +2968,213 @@ async function saveKeys() {
     toast.textContent = 'Save failed: ' + e.message;
   }
 }
+
+// ══ DRAG-DROP FILE UPLOAD ══════════════════════════════════════════════════
+let _dragCounter = 0;
+document.addEventListener('dragenter', e => {
+  if (!e.dataTransfer.types.includes('Files')) return;
+  _dragCounter++;
+  document.getElementById('dragdrop-overlay').classList.add('active');
+});
+document.addEventListener('dragleave', () => {
+  _dragCounter--;
+  if (_dragCounter <= 0) { _dragCounter = 0; document.getElementById('dragdrop-overlay').classList.remove('active'); }
+});
+document.addEventListener('dragover', e => { e.preventDefault(); });
+document.addEventListener('drop', e => {
+  e.preventDefault();
+  _dragCounter = 0;
+  document.getElementById('dragdrop-overlay').classList.remove('active');
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  const fi = document.getElementById('file-input');
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  fi.files = dt.files;
+  fi.dispatchEvent(new Event('change', { bubbles: true }));
+});
+
+// ══ COMMAND PALETTE ════════════════════════════════════════════════════════
+const _palCommands = [
+  { label: '/help',       desc: 'Show all commands',          key: '' },
+  { label: '/clear',      desc: 'Clear chat history',         key: 'Ctrl+L' },
+  { label: '/search',     desc: 'Search chat messages',       key: 'Ctrl+F' },
+  { label: '/export',     desc: 'Export chat as Markdown',    key: '' },
+  { label: '/status',     desc: 'Show Eve state & mood',      key: '' },
+  { label: '/tools',      desc: 'List all available tools',   key: '' },
+  { label: '/workspace',  desc: 'Show/set workspace path',    key: '' },
+  { label: '/quest',      desc: 'Open quest queue',           key: '' },
+  { label: '/stats',      desc: 'Open RPG stats panel',       key: '' },
+  { label: '/shell',      desc: 'Run a shell command',        key: '' },
+  { label: 'Cycle FX',    desc: 'Cycle visual effects',       key: 'F5',   action: cycleFx },
+  { label: 'Attach file', desc: 'Upload a file to chat',      key: '', action: () => document.getElementById('file-input').click() },
+];
+
+let _palIdx = 0;
+const _palOverlay = document.getElementById('cmd-palette-overlay');
+const _palInput   = document.getElementById('cmd-palette-input');
+const _palList    = document.getElementById('cmd-palette-list');
+
+function _palRender(q) {
+  const items = q
+    ? _palCommands.filter(c => c.label.toLowerCase().includes(q.toLowerCase()) || c.desc.toLowerCase().includes(q.toLowerCase()))
+    : _palCommands;
+  _palList.innerHTML = items.map((c, i) => `
+    <li class="${i === _palIdx ? 'selected' : ''}" data-idx="${i}" onclick="_palRun(${i})">
+      <span>${c.label} <span style="color:var(--text-dim);font-size:10px">— ${c.desc}</span></span>
+      ${c.key ? `<span class="pal-key">${c.key}</span>` : ''}
+    </li>`).join('');
+  _palList._items = items;
+}
+
+function _palRun(idx) {
+  const items = _palList._items || _palCommands;
+  const item = items[idx];
+  if (!item) return;
+  _palClose();
+  if (item.action) { item.action(); return; }
+  userInput.focus();
+  userInput.value = item.label + (item.label.startsWith('/') ? ' ' : '');
+  if (item.label === '/clear') { handleCommand('/clear'); userInput.value = ''; }
+}
+
+function _palOpen() {
+  _palIdx = 0;
+  _palInput.value = '';
+  _palRender('');
+  _palOverlay.classList.add('active');
+  _palInput.focus();
+}
+
+function _palClose() {
+  _palOverlay.classList.remove('active');
+  userInput.focus();
+}
+
+_palInput.addEventListener('input', () => { _palIdx = 0; _palRender(_palInput.value); });
+_palInput.addEventListener('keydown', e => {
+  const items = _palList._items || _palCommands;
+  if (e.key === 'ArrowDown')  { e.preventDefault(); _palIdx = Math.min(_palIdx + 1, items.length - 1); _palRender(_palInput.value); }
+  if (e.key === 'ArrowUp')    { e.preventDefault(); _palIdx = Math.max(_palIdx - 1, 0); _palRender(_palInput.value); }
+  if (e.key === 'Enter')      { e.preventDefault(); _palRun(_palIdx); }
+  if (e.key === 'Escape')     { _palClose(); }
+});
+_palOverlay.addEventListener('click', e => { if (e.target === _palOverlay) _palClose(); });
+
+// ══ CHAT SEARCH ════════════════════════════════════════════════════════════
+let _searchActive = false;
+let _searchMatches = [];
+let _searchIdx = 0;
+
+function chatSearch(query) {
+  document.querySelectorAll('.search-match-msg').forEach(el => el.classList.remove('search-match-msg'));
+  document.querySelectorAll('.search-highlight').forEach(el => {
+    el.outerHTML = el.textContent;
+  });
+  if (!query) { _searchActive = false; _searchMatches = []; return; }
+  _searchActive = true;
+  _searchMatches = [];
+  const re = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+  document.querySelectorAll('#chat-log .msg-row').forEach(row => {
+    const content = row.querySelector('.msg-content');
+    if (!content) return;
+    if (re.test(content.innerText)) {
+      row.classList.add('search-match-msg');
+      content.innerHTML = content.innerHTML.replace(re, m => `<mark class="search-highlight">${m}</mark>`);
+      _searchMatches.push(row);
+    }
+  });
+  if (_searchMatches.length) {
+    _searchIdx = 0;
+    _searchMatches[0].scrollIntoView({behavior:'smooth', block:'center'});
+    addMsg('system', `🔍 Found ${_searchMatches.length} match${_searchMatches.length===1?'':'es'} for "${query}" — Esc to clear`);
+  } else {
+    addMsg('system', `🔍 No matches for "${query}"`);
+  }
+}
+
+function _clearSearch() {
+  if (!_searchActive) return;
+  document.querySelectorAll('.search-match-msg').forEach(el => el.classList.remove('search-match-msg'));
+  document.querySelectorAll('.search-highlight').forEach(el => { el.outerHTML = el.textContent; });
+  _searchActive = false; _searchMatches = []; _searchIdx = 0;
+}
+
+// ══ GLOBAL KEYBOARD SHORTCUTS ══════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  // Ctrl+K → command palette
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault();
+    _palOverlay.classList.contains('active') ? _palClose() : _palOpen();
+    return;
+  }
+  // Ctrl+F → chat search
+  if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+    const focused = document.activeElement;
+    if (focused && (focused.id === 'user-input' || focused.id === 'steer-input')) return;
+    e.preventDefault();
+    const q = prompt('Search chat:');
+    if (q !== null) chatSearch(q);
+    return;
+  }
+  // Ctrl+L → clear chat
+  if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
+    e.preventDefault();
+    handleCommand('/clear');
+    return;
+  }
+  // Esc → clear search / close any open modal
+  if (e.key === 'Escape') {
+    if (_searchActive) { _clearSearch(); return; }
+  }
+});
+
+// ══ GLOBAL ERROR BOUNDARY ══════════════════════════════════════════════════
+window.addEventListener('unhandledrejection', e => {
+  const msg = e.reason?.message || String(e.reason) || 'Unknown async error';
+  console.error('[Eve error boundary]', e.reason);
+  addMsg('error', `⚠ Background error: ${msg} — UI still running. Type /clear if display looks broken.`);
+});
+window.onerror = (msg, src, line) => {
+  console.error('[Eve JS error]', msg, src, line);
+  addMsg('error', `⚠ JS error: ${msg} (${src?.split('/').pop()}:${line}) — UI still running.`);
+  return false;
+};
+
+// ══ TOOLBAR ARIA LABELS ════════════════════════════════════════════════════
+(function patchAria() {
+  const map = {
+    'btn-attach':    'Attach file (or drag & drop)',
+    'btn-autoaccept':'Toggle auto-accept edits',
+    'btn-plan':      'Toggle plan mode',
+    'btn-workspace': 'Set workspace directory',
+    'btn-files':     'Download created files',
+    'btn-keys':      'Set API keys',
+    'lock-badge':    'Session locked to model — click to unlock',
+  };
+  Object.entries(map).forEach(([id, label]) => {
+    const el = document.getElementById(id);
+    if (el) el.setAttribute('aria-label', label);
+  });
+})();
 </script>
+
+<!-- COMMAND PALETTE -->
+<div id="cmd-palette-overlay" role="dialog" aria-label="Command palette" aria-modal="true">
+  <div id="cmd-palette-box">
+    <input id="cmd-palette-input" placeholder="Search commands or type / ..." aria-label="Command palette search" autocomplete="off" spellcheck="false">
+    <ul id="cmd-palette-list"></ul>
+    <div id="cmd-palette-hint">
+      <span>↑↓ navigate</span>
+      <span>↵ run</span>
+      <span>Esc close</span>
+      <span>Ctrl+K toggle</span>
+    </div>
+  </div>
+</div>
+
+<!-- DRAG-DROP OVERLAY -->
+<div id="dragdrop-overlay" aria-hidden="true"><span>DROP FILE HERE</span></div>
+
 </body>
 </html>
