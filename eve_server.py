@@ -1364,6 +1364,36 @@ async def models():
     return {"models": list(MODELS.values())}
 
 
+async def _iter_ollama_async(client, chat_kwargs: dict, sid: str):
+    """Iterate a sync Ollama streaming response in a thread so the event loop
+    stays free. Without this, each next(stream) call blocks the event loop and
+    the /stop endpoint can't be processed until the next token arrives."""
+    import threading
+    loop = asyncio.get_running_loop()
+    q: asyncio.Queue = asyncio.Queue(maxsize=64)
+    _DONE = object()
+
+    def _producer():
+        try:
+            for chunk in client.chat(**chat_kwargs):
+                loop.call_soon_threadsafe(q.put_nowait, chunk)
+                if session_cancel.get(sid):   # fast-path cancel inside the thread
+                    break
+        except Exception as exc:
+            loop.call_soon_threadsafe(q.put_nowait, exc)
+        finally:
+            loop.call_soon_threadsafe(q.put_nowait, _DONE)
+
+    threading.Thread(target=_producer, daemon=True).start()
+    while True:
+        item = await q.get()
+        if item is _DONE:
+            return
+        if isinstance(item, Exception):
+            raise item
+        yield item
+
+
 @app.post("/chat/stream")
 async def chat_stream(req: ChatRequest):
     """SSE streaming V2U agent chat — live thinking, tool calls, and content."""
@@ -1947,9 +1977,8 @@ CUSTOM INSTRUCTIONS:
                     content = ""
                     tc_list = []
 
-                    stream = await asyncio.to_thread(lambda: client.chat(**ck))
                     _stopped = False
-                    for chunk in stream:
+                    async for chunk in _iter_ollama_async(client, ck, sid):
                         if session_cancel.get(sid):
                             session_cancel.pop(sid, None)
                             yield sse("stopped", {"message": "Task stopped by user.", "round": rnd})
@@ -1987,9 +2016,8 @@ CUSTOM INSTRUCTIONS:
                     thinking = ""
                     content = ""
                     tc_list = []
-                    stream = await asyncio.to_thread(lambda: client.chat(**ck))
                     _stopped = False
-                    for chunk in stream:
+                    async for chunk in _iter_ollama_async(client, ck, sid):
                         if session_cancel.get(sid):
                             session_cancel.pop(sid, None)
                             yield sse("stopped", {"message": "Task stopped by user.", "round": rnd})

@@ -1034,13 +1034,21 @@ async function sendSteer() {
 }
 
 async function sendStop() {
-  addMsg('system', '<span style="color:#f55">⏹ Stop requested...</span>');
+  const btn = document.getElementById('btn-stop');
+  if (btn) { btn.textContent = '⏳ Stopping...'; btn.disabled = true; }
+  addMsg('system', '<span style="color:#f55">⏹ Stop requested — finishing current token...</span>');
   try {
     await fetch(`${API}/stop`, {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({session_id: activeSessionId})
     });
-  } catch(e) { addMsg('system', `<span style="color:#f55">✗ Stop failed: ${e}</span>`); }
+  } catch(e) {
+    addMsg('system', `<span style="color:#f55">✗ Stop failed: ${e}</span>`);
+  } finally {
+    setTimeout(() => {
+      if (btn) { btn.textContent = '⏹ Stop'; btn.disabled = false; }
+    }, 2000);
+  }
 }
 
 async function loadSettings() {
@@ -3123,9 +3131,11 @@ document.addEventListener('keydown', e => {
     handleCommand('/clear');
     return;
   }
-  // Esc → clear search / close any open modal
+  // Esc → clear search → close palette → stop streaming (priority order)
   if (e.key === 'Escape') {
     if (_searchActive) { _clearSearch(); return; }
+    if (_palOverlay.classList.contains('active')) { _palClose(); return; }
+    if (steerBar && steerBar.style.display !== 'none') { sendStop(); return; }
   }
 });
 
