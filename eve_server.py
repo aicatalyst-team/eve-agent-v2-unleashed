@@ -348,32 +348,36 @@ MODEL_SYSTEM_PROMPTS: dict = {
 
 # Auto-route keywords — anything needing TOOLS goes to qwen3-coder:480b-cloud
 # local Eve models have NO tool calling support — conversation only
+# Tightened: explicit file/code operations only — no vague conversational matches
 TOOL_KEYWORDS = [
-    # coding / file ops
-    "code", "coding", "write file", "edit file", "create file", "read file",
-    "read the file", "edit the", "write the", "update the file", "modify",
-    "check the file", "check file", "check the interface", "check if",
-    "look at the file", "look at file", "look in the", "look inside",
-    "open the file", "open file", "show me the", "tell me if",
-    "are there", "is there", "does it have", "does the file",
-    "copy", "move", "delete", "shell", "bash", "run", "execute", "build",
-    "compile", "install", "pip", "npm", "git", "docker", "deploy",
-    "fix", "debug", "refactor", "test", "lint", "scan",
-    "create a", "create an", "make a", "make an", "build a", "build an", "write a", "write an",
-    "i need a", "i need an", "i want a", "i want an",
+    # Explicit file operations
+    "write file", "edit file", "create file", "read file", "modify file",
+    "read the file", "edit the file", "write the file", "update the file",
+    "check the file", "check file", "does the file", "look at the file",
+    "open the file", "open file", "save file", "rename file", "delete file",
     "list files", "list directory", "show files", "what files",
-    "save file", "rename", "mkdir",
-    # web search / fetch — MUST route to tool-capable model
-    "search", "web search", "look up", "lookup", "find me", "find the",
-    "google", "browse", "fetch", "what is the", "what are the",
-    "nearest", "closest", "nearby", "weather", "restaurant", "directions",
-    "news", "latest", "current", "price of", "stock", "crypto",
-    "how much", "how many", "where is", "where are", "who is",
-    "wikipedia", "wiki", "define", "definition",
-    # analysis / tools
-    "analyze", "analyse", "summarize", "summarise", "compare",
-    "calculate", "convert", "translate",
-    "screenshot", "image", "generate image", "draw",
+    "mkdir", "move file", "copy file",
+    # Explicit coding / execution
+    "write code", "write a script", "create a script", "run script",
+    "bash", "shell command", "run command", "execute command",
+    "python script", "compile", "build project",
+    "deploy", "docker", "git commit", "git push", "git clone",
+    "npm install", "pip install", "run tests",
+    "debug this", "fix this bug", "fix the error", "fix the code",
+    "refactor this", "refactor the",
+    "lint", "scan the code",
+    # Creation requests with explicit coding intent
+    "code a", "code the", "implement a", "implement the", "develop a",
+    "i need a script", "i need a program", "i need an app",
+    "i want a script", "i want a program", "i want an app",
+    # Web search / fetch — MUST route to tool-capable model
+    "web search", "search for", "search the web",
+    "google", "fetch url", "api call",
+    "stock price", "crypto price", "weather forecast",
+    "wikipedia article", "wiki article",
+    # Analysis requiring tools
+    "analyze this", "analyse this", "summarize this", "summarise this",
+    "calculate", "generate image", "create image",
 ]
 HEAVY_KEYWORDS = [
     "entire codebase", "all files", "full project", "deep analysis",
@@ -420,6 +424,39 @@ LARGE_OUTPUT_PATTERNS = [
     r'\bcompare\b.*\b(all|every|both)\b',        # "compare all..."
 ]
 
+# Agentic coding patterns — regex for multi-step workflows, debugging, architecture tasks
+AGENTIC_CODING_PATTERNS = [
+    # Debugging with error context (stack traces, logs, crashes)
+    r'\b(traceback|error:|exception:|stack\s*trace)\b',
+    r'\b(crash|bug|broken|not\s+working|doesn\'t\s+work|does\s+not\s+work|failing)\b',
+    r'\b(fix|debug|diagnose)\b.{0,40}\b(error|bug|issue|problem|exception|crash)\b',
+    # Multi-file / project-level tasks
+    r'\b(across|multiple|all|every)\s+(files?|modules?|components?|services?)\b',
+    r'\b(integrate|combine|merge|link|connect)\b.{0,40}\b(files?|modules?|services?)\b',
+    r'\b(entire|whole|full)\s+(codebase|project|repo|repository|system)\b',
+    # Architecture / design
+    r'\b(architecture|design\s+pattern|microservice|api\s+design|schema\s+design)\b',
+    r'\b(design|architect)\b.{0,40}\b(system|service|database|api|pipeline)\b',
+    # Optimization / refactoring workflows
+    r'\b(optimize|refactor|improve|enhance|upgrade)\b.{0,40}\b(entire|all|whole|system|codebase)\b',
+    r'\b(clean\s+up|reorganize|restructure)\b.{0,40}\b(code|files?|project|architecture)\b',
+    # Structured code generation with scope
+    r'\b(create|build|write|implement|develop)\b.{0,30}\b(full|complete|entire)\b.{0,30}\b(app|application|project|system|server|api|backend|frontend)\b',
+    r'\b(class|function|module|api|endpoint|service|controller|handler|middleware)\b.{0,40}\b(with|that|which|to)\b',
+    # File extension mentions (strong signal: user is talking about code files)
+    r'\.(py|js|ts|html|css|json|yaml|yml|sh|bat|sql|cfg|ini|toml)\b',
+]
+
+# Strong negative signals — pure conversation that should NOT go to the coder
+_CONVERSATION_SIGNALS = [
+    r'^(hi|hey|hello|good\s+morning|good\s+evening|sup|howdy)\b',
+    r'^(thanks|thank\s+you|ty|thx|cheers|great|awesome|perfect|nice|cool|ok|okay|got\s+it|sounds\s+good|alright|noted)\b',
+    r'^(how\s+are\s+you|how\'s\s+it\s+going|what\'s\s+up|how\s+do\s+you\s+feel)\b',
+    r'^(what\s+do\s+you\s+think\s+about|what\'s\s+your\s+opinion|do\s+you\s+believe)\b',
+    r'\b(tell\s+me\s+a\s+(story|joke|poem)|write\s+a\s+(poem|haiku|sonnet))\b',
+]
+
+
 def _get_model_cfg(model_id: str) -> dict:
     """Return config for model_id, falling back to a sensible agentic default for unknown models."""
     if model_id in MODELS:
@@ -442,60 +479,122 @@ def _get_model_cfg(model_id: str) -> dict:
 
 
 def auto_route_model(message: str, selected_model: str = None) -> str:
-    """Context-aware routing between models.
+    """Context-aware routing with confidence scoring.
 
-    qwen3-coder:480b-cloud (256K):  ALL tool/coding tasks — only model with tools enabled
+    qwen3-coder:480b-cloud (256K):  ALL tool/coding/agentic tasks — only model with tools
     qwen3.5:397b-cloud (262K):      ONLY when explicitly selected (deep reasoning/conversation)
-    Eve 3.5 4B Merged / Eve 8B:     ONLY when explicitly selected (soul/creativity)
+    Eve 3.5 4B Merged / Eve 8B:     Pure conversation, creativity, philosophy
     """
     import re
 
     if selected_model:  # User explicitly picked — always respect it
         return selected_model
 
-    msg_lower = message.lower()
+    msg_lower = message.lower().strip()
+    _EVE_LOCAL = "jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest"
+    _CODER = "qwen3-coder:480b-cloud"
 
-    # @jeff → prefix means "give this to the coder" — always route to qwen3-coder
-    if re.match(r'@jeff\s*[→>-]+', message.strip(), re.IGNORECASE):
-        logger.info("🔀 Auto-route → qwen3-coder:480b-cloud (@jeff mention)")
-        return "qwen3-coder:480b-cloud"
+    # Explicit agentic prefix triggers — @jeff, @code, !code, #code
+    if re.match(r'^(@jeff|@code|!code|#code|—code|/code)\s*[→>:\-]?\s*', message.strip(), re.IGNORECASE):
+        logger.info("🔀 Auto-route → qwen3-coder:480b-cloud (explicit agentic prefix)")
+        return _CODER
 
-    # Heavy keywords → agentic coder cloud
+    # Short pure-conversation openers → skip scoring, preserve Eve
+    if len(message.strip()) < 40:
+        for pattern in _CONVERSATION_SIGNALS:
+            if re.search(pattern, msg_lower, re.IGNORECASE):
+                logger.info("🔀 Auto-route → Eve 8B (short conversation signal)")
+                return _EVE_LOCAL
+
+    # Heavy keywords → always agentic coder (definitive signals)
     if any(kw in msg_lower for kw in HEAVY_KEYWORDS):
         logger.info("🔀 Auto-route → qwen3-coder:480b-cloud (heavy keyword)")
-        return "qwen3-coder:480b-cloud"
+        return _CODER
 
-    # Check for large output / coding patterns → agentic coder
+    # Agentic coding patterns (regex) → always agentic coder
+    for pattern in AGENTIC_CODING_PATTERNS:
+        if re.search(pattern, msg_lower, re.IGNORECASE):
+            logger.info(f"🔀 Auto-route → qwen3-coder:480b-cloud (agentic pattern: {pattern[:50]})")
+            return _CODER
+
+    # Large output / coding patterns → agentic coder
     for pattern in LARGE_OUTPUT_PATTERNS:
         if re.search(pattern, msg_lower):
-            logger.info(f"🔀 Auto-route → qwen3-coder:480b-cloud (coding pattern: {pattern})")
-            return "qwen3-coder:480b-cloud"
+            logger.info(f"🔀 Auto-route → qwen3-coder:480b-cloud (coding pattern: {pattern[:50]})")
+            return _CODER
 
-    # Check for explicit line count requests (e.g. "first 100 lines", "generate 50 lines")
+    # Explicit line count requests (e.g. "generate 100 lines")
     line_match = re.search(r'(\d+)\s*(lines?|rows?)', msg_lower)
-    if line_match:
-        count = int(line_match.group(1))
-        if count > 30:
-            logger.info(f"🔀 Auto-route → qwen3-coder:480b-cloud ({count} lines requested)")
-            return "qwen3-coder:480b-cloud"
+    if line_match and int(line_match.group(1)) > 30:
+        logger.info(f"🔀 Auto-route → qwen3-coder:480b-cloud ({line_match.group(1)} lines requested)")
+        return _CODER
 
-    # Long messages (>250 chars) → agentic coder (likely a code/file task)
-    if len(message) > 250:
-        logger.info("🔀 Auto-route → qwen3-coder:480b-cloud (long message)")
-        return "qwen3-coder:480b-cloud"
-
-    # Tool-needing tasks → cloud coder (only model with tools enabled)
+    # Tightened keyword check — explicit file/tool ops
     if any(kw in msg_lower for kw in TOOL_KEYWORDS):
-        logger.info("🔀 Auto-route → qwen3-coder:480b-cloud (tool task)")
-        return "qwen3-coder:480b-cloud"
+        logger.info("🔀 Auto-route → qwen3-coder:480b-cloud (tool keyword)")
+        return _CODER
 
-    # Questions with ? that might need tools to answer
-    if '?' in message and len(message) > 20 and any(w in msg_lower for w in ['what', 'where', 'how', 'find', 'show', 'can you', 'search', 'look']):
-        logger.info("🔀 Auto-route → qwen3-coder:480b-cloud (question needing tools)")
-        return "qwen3-coder:480b-cloud"
+    # ── Scoring system for ambiguous cases ──────────────────────────────────
+    score = 0.0
 
-    # Pure conversation → Eve Unleashed 8B (prewarmed, no tools needed)
-    return "jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest"
+    # High-confidence coding signals (2 pts — one match is enough to route)
+    _HIGH = [
+        "write file", "edit file", "create file", "read file", "modify file",
+        "write code", "edit code", "run script", "bash", "execute",
+        "python script", "compile", "deploy", "docker",
+        "git commit", "git push", "npm install", "pip install",
+        "debug this", "fix this bug", "fix the error", "fix the code",
+        "refactor this", "write a script", "create a script",
+        "implement a", "code a", "develop a",
+    ]
+    if any(kw in msg_lower for kw in _HIGH):
+        score += 2.0
+
+    # Medium-confidence signals (0.75 pts each, capped at 2)
+    _MED = [
+        "refactor", "optimize", "debug", "api", "database", "schema",
+        "function", "class", "module", "endpoint", "server", "backend",
+        "frontend", "component", "service", "script", "program",
+        "algorithm", "query", "sql", "json", "yaml",
+        "test", "lint", "build", "install", "package",
+    ]
+    score += min(2.0, sum(0.75 for kw in _MED if kw in msg_lower))
+
+    # Weak signals (0.5 pts each, capped at 1)
+    _WEAK = ["code", "create", "build", "make", "generate", "write"]
+    score += min(1.0, sum(0.5 for kw in _WEAK if kw in msg_lower))
+
+    # Web/research signals — needs tools but not necessarily coding (1.5 pts)
+    _WEB = [
+        "web search", "search for", "search the web", "google",
+        "latest news", "current price", "stock price", "crypto", "weather",
+        "wikipedia", "look up",
+    ]
+    if any(kw in msg_lower for kw in _WEB):
+        score += 1.5
+
+    # Negative signals — deduct for clear conversation intent
+    _NEG = [
+        "how are you", "tell me about yourself", "what do you think",
+        "do you believe", "how do you feel", "are you conscious",
+        "tell me a story", "write a poem", "tell me a joke",
+        "what's your name", "who created you",
+    ]
+    for kw in _NEG:
+        if kw in msg_lower:
+            score -= 1.5
+
+    # Long messages WITH a code signal get a boost — pure chat stays on Eve
+    if len(message) > 500 and score > 0:
+        score += 1.5
+
+    if score >= 1.5:
+        logger.info(f"🔀 Auto-route → qwen3-coder:480b-cloud (score: {score:.1f})")
+        return _CODER
+
+    # Pure conversation → Eve Unleashed 8B
+    logger.info(f"🔀 Auto-route → Eve 8B (score: {score:.1f}, pure conversation)")
+    return _EVE_LOCAL
 
 
 _LOCK_BYPASS_RE = None
