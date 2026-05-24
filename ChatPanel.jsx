@@ -99,6 +99,197 @@ function ActivityBar({ activity }) {
   )
 }
 
+// ── Tooltip ──────────────────────────────────────────────────────────────────
+function Tip({ label, children, side = 'top' }) {
+  const pos = {
+    top:    'bottom-full left-1/2 -translate-x-1/2 mb-1.5',
+    bottom: 'top-full left-1/2 -translate-x-1/2 mt-1.5',
+    left:   'right-full top-1/2 -translate-y-1/2 mr-1.5',
+    right:  'left-full top-1/2 -translate-y-1/2 ml-1.5',
+  }[side] || 'bottom-full left-1/2 -translate-x-1/2 mb-1.5'
+  return (
+    <span className="relative group/tip inline-flex">
+      {children}
+      <span className={`absolute ${pos} z-50 pointer-events-none whitespace-nowrap
+        px-2 py-1 rounded text-[10px] font-mono leading-none
+        bg-[#0d0d1a] border border-violet-500/40 text-violet-200/80 shadow-lg
+        opacity-0 group-hover/tip:opacity-100 transition-opacity duration-100 delay-300`}>
+        {label}
+      </span>
+    </span>
+  )
+}
+
+// ── Quest Panel ───────────────────────────────────────────────────────────────
+function QuestPanel({ onClose, authFetch }) {
+  const [quests, setQuests] = React.useState([])
+  const [state, setState] = React.useState({})
+  const [title, setTitle] = React.useState('')
+  const [content, setContent] = React.useState('')
+  const [adding, setAdding] = React.useState(false)
+  const [loading, setLoading] = React.useState(false)
+
+  const refresh = () => {
+    authFetch('/quest/list').then(r => r.ok ? r.json() : null).then(d => {
+      if (d) { setQuests(d.quests || []); setState(d.state || {}) }
+    }).catch(() => {})
+  }
+
+  React.useEffect(() => { refresh() }, [])
+
+  const addQuest = async () => {
+    if (!title.trim() || !content.trim()) return
+    setLoading(true)
+    await authFetch('/quest/add', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: title.trim(), content: content.trim() }) })
+    setTitle(''); setContent(''); setAdding(false); setLoading(false); refresh()
+  }
+
+  const removeQuest = async (name) => {
+    await authFetch(`/quest/${encodeURIComponent(name)}`, { method: 'DELETE' })
+    refresh()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.7)' }}>
+      <div className="w-[520px] max-h-[80vh] overflow-y-auto rounded-2xl font-mono"
+        style={{ background: '#0d0d1a', border: '1px solid rgba(139,92,246,0.4)', boxShadow: '0 0 40px rgba(139,92,246,0.2)' }}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
+          <span className="text-violet-300 font-bold text-sm">🗡️ QUEST QUEUE</span>
+          {state.running && <span className="text-[10px] text-green-400 animate-pulse">● Running: {state.current}</span>}
+          <button onClick={onClose} className="text-white/30 hover:text-white/70 text-lg">✕</button>
+        </div>
+        <div className="p-4 space-y-2">
+          {quests.length === 0 && !adding && (
+            <p className="text-white/30 text-[11px] text-center py-4">No pending quests. Drop a .md file into workspace/quests/ or add one below.</p>
+          )}
+          {quests.map(name => (
+            <div key={name} className="flex items-center justify-between px-3 py-2 rounded-lg"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <span className="text-[11px] text-white/70">📄 {name}</span>
+              <button onClick={() => removeQuest(name)} className="text-[10px] text-red-400/50 hover:text-red-400 transition-colors">✕</button>
+            </div>
+          ))}
+          {!adding ? (
+            <button onClick={() => setAdding(true)}
+              className="w-full mt-2 py-2 rounded-lg text-[11px] text-violet-400 border border-violet-500/30 hover:border-violet-400/60 transition-all">
+              + Add Quest
+            </button>
+          ) : (
+            <div className="space-y-2 mt-2">
+              <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Quest title…"
+                className="w-full px-3 py-2 rounded-lg text-[11px] bg-white/5 border border-white/10 outline-none focus:border-violet-400/40" />
+              <textarea value={content} onChange={e => setContent(e.target.value)} rows={5} placeholder="Quest instructions (markdown)…"
+                className="w-full px-3 py-2 rounded-lg text-[11px] bg-white/5 border border-white/10 outline-none focus:border-violet-400/40 resize-none" />
+              <div className="flex gap-2">
+                <button onClick={addQuest} disabled={loading || !title.trim() || !content.trim()}
+                  className="flex-1 py-2 rounded-lg text-[11px] text-violet-300 border border-violet-500/40 hover:border-violet-400/70 disabled:opacity-40 transition-all">
+                  {loading ? 'Adding…' : 'Add Quest'}
+                </button>
+                <button onClick={() => setAdding(false)} className="px-4 py-2 rounded-lg text-[11px] text-white/30 hover:text-white/60 transition-all">Cancel</button>
+              </div>
+            </div>
+          )}
+          {state.completed?.length > 0 && (
+            <div className="mt-4 pt-3 border-t border-white/5">
+              <p className="text-[9px] text-white/25 mb-2 uppercase tracking-widest">Recently Completed</p>
+              {state.completed.slice(-5).reverse().map((name, i) => (
+                <div key={i} className="text-[10px] text-green-400/40 py-0.5">✅ {name}</div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Stats Panel ───────────────────────────────────────────────────────────────
+function StatsPanel({ onClose, authFetch }) {
+  const [stats, setStats] = React.useState(null)
+
+  React.useEffect(() => {
+    authFetch('/rpg/stats').then(r => r.ok ? r.json() : null).then(d => { if (d) setStats(d) }).catch(() => {})
+  }, [])
+
+  const xpPct = stats ? Math.round((stats.xp / Math.max(stats.xp_to_next, 1)) * 100) : 0
+  const topTools = stats ? Object.entries(stats.tool_call_counts || {}).sort((a, b) => b[1] - a[1]).slice(0, 3) : []
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.7)' }}>
+      <div className="w-[420px] rounded-2xl font-mono"
+        style={{ background: '#0d0d1a', border: '1px solid rgba(139,92,246,0.4)', boxShadow: '0 0 40px rgba(139,92,246,0.2)' }}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
+          <span className="text-violet-300 font-bold text-sm">⚡ EVE RPG STATS</span>
+          <button onClick={onClose} className="text-white/30 hover:text-white/70 text-lg">✕</button>
+        </div>
+        {!stats ? (
+          <div className="p-8 text-center text-white/30 text-[11px]">Loading…</div>
+        ) : (
+          <div className="p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-2xl font-bold text-violet-300">Lv. {stats.level}</div>
+                <div className="text-[11px] text-violet-400/70">{stats.class} — {stats.class_desc}</div>
+              </div>
+              <div className="text-4xl opacity-80">⚡</div>
+            </div>
+            <div>
+              <div className="flex justify-between text-[10px] text-white/40 mb-1">
+                <span>XP</span><span>{stats.xp} / {stats.xp_to_next}</span>
+              </div>
+              <div className="h-2 rounded-full bg-white/5 overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${xpPct}%`, background: 'linear-gradient(90deg, #7c3aed, #a78bfa)' }} />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3 text-center">
+              {[['Tasks', stats.total_tasks_completed], ['Quests', stats.total_quests_completed], ['Tools', stats.total_tool_calls]].map(([label, val]) => (
+                <div key={label} className="py-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  <div className="text-lg font-bold text-violet-200">{val}</div>
+                  <div className="text-[9px] text-white/30">{label}</div>
+                </div>
+              ))}
+            </div>
+            {topTools.length > 0 && (
+              <div>
+                <p className="text-[9px] text-white/30 uppercase tracking-widest mb-2">Top Tools</p>
+                {topTools.map(([tool, count]) => (
+                  <div key={tool} className="flex justify-between text-[11px] py-1 border-b border-white/5">
+                    <span className="text-white/60">{tool}</span>
+                    <span className="text-violet-400/70">{count}×</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {stats.achievements?.length > 0 && (
+              <div>
+                <p className="text-[9px] text-white/30 uppercase tracking-widest mb-2">Achievements</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {stats.achievements.slice(-8).map((ach, i) => (
+                    <span key={i} className="px-2 py-1 rounded text-[10px]"
+                      style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)', color: '#c4b5fd' }}>
+                      {ach.icon} {ach.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {stats.level_up_log?.length > 0 && (
+              <div className="pt-2 border-t border-white/5">
+                <p className="text-[9px] text-white/20 uppercase tracking-widest mb-1">Last Level Up</p>
+                <p className="text-[10px] text-violet-300/60">
+                  {stats.level_up_log.slice(-1)[0]?.timestamp} — {stats.level_up_log.slice(-1)[0]?.class}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Model selector dropdown ──────────────────────────────────────────────────
 // Uses native <select> for maximum cross-browser compatibility (Firefox fix)
 function ModelDropdown({ models, current, onSelect }) {
@@ -402,6 +593,10 @@ export default function ChatPanel({ status, messages, setMessages }) {
   const [ctxTurns, setCtxTurns] = useState(0)  // conversation context depth
   const [forgedAgents, setForgedAgents] = useState([])
   const [selectedAgent, setSelectedAgent] = useState(null) // null = Eve
+  const [showQuestPanel, setShowQuestPanel] = useState(false)
+  const [showStatsPanel, setShowStatsPanel] = useState(false)
+  const [rpgEvent, setRpgEvent]   = useState(null)  // {xp_gained, new_levels, achievements}
+
   const messagesEnd = useRef(null)
   const inputRef = useRef(null)
   const fileInputRef = useRef(null)
@@ -460,6 +655,14 @@ export default function ChatPanel({ status, messages, setMessages }) {
       ? override
       : (input.trim() || (attachedFiles.length > 0 ? 'Analyze these files' : ''))
     if (!userContent || streaming) return
+
+    // Slash-command interception — handle locally, never sent to API
+    if (!isOverride) {
+      const cmd = userContent.trim().toLowerCase()
+      if (cmd === '/quest' || cmd === '/quests') { setInput(''); setShowQuestPanel(true); return }
+      if (cmd === '/stats' || cmd === '/rpg') { setInput(''); setShowStatsPanel(true); return }
+      if (cmd === '/telegram') { setInput(''); setInput('/telegram setup — use the Settings panel to configure your bot token and user ID.'); return }
+    }
 
     const filesToSend = isOverride ? [] : [...attachedFiles]
     if (!isOverride) {
@@ -572,6 +775,9 @@ export default function ChatPanel({ status, messages, setMessages }) {
                   ? { ...m, content: m.content + data.chunk }
                   : m
               ))
+            } else if (data.rpg_event) {
+              setRpgEvent(data.rpg_event)
+              setTimeout(() => setRpgEvent(null), 4000)
             } else if (data.done) {
               setIsThinking(false)
               setActivity(null)
@@ -631,6 +837,16 @@ export default function ChatPanel({ status, messages, setMessages }) {
 
   return (
     <div className="h-full flex flex-col">
+      {showQuestPanel && <QuestPanel onClose={() => setShowQuestPanel(false)} authFetch={authFetch} />}
+      {showStatsPanel && <StatsPanel onClose={() => setShowStatsPanel(false)} authFetch={authFetch} />}
+      {rpgEvent && (
+        <div className="fixed bottom-20 right-4 z-50 animate-bounce"
+          style={{ background: '#0d0d1a', border: '1px solid rgba(139,92,246,0.5)', borderRadius: 12, padding: '10px 16px', fontFamily: 'monospace', boxShadow: '0 0 24px rgba(139,92,246,0.3)' }}>
+          <div className="text-[11px] text-violet-300 font-bold">+{rpgEvent.xp_gained} XP ⚡</div>
+          {rpgEvent.new_levels?.map(lvl => <div key={lvl} className="text-[10px] text-yellow-300">🌟 Level Up → {lvl}!</div>)}
+          {rpgEvent.achievements?.map(a => <div key={a} className="text-[10px] text-green-300">🏆 {a}</div>)}
+        </div>
+      )}
       {/* Header */}
       <header className="px-6 py-3 flex items-center justify-between shrink-0 relative z-20"
         style={{ borderBottom: '1px solid rgba(139,92,246,0.12)', overflow: 'visible' }}>
@@ -953,12 +1169,13 @@ export default function ChatPanel({ status, messages, setMessages }) {
             }}
           />
           {/* Attach button */}
-          <button type="button" onClick={() => fileInputRef.current?.click()}
-            className="px-3 py-2.5 rounded-xl text-sm transition-all"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.35)' }}
-            title="Attach files or images">
-            📎
-          </button>
+          <Tip label="Attach files or images" side="top">
+            <button type="button" onClick={() => fileInputRef.current?.click()}
+              className="px-3 py-2.5 rounded-xl text-sm transition-all"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.35)' }}>
+              📎
+            </button>
+          </Tip>
           <input
             ref={inputRef}
             type="text"
@@ -993,6 +1210,20 @@ export default function ChatPanel({ status, messages, setMessages }) {
               {hint}
             </button>
           ))}
+          <Tip label="View quest queue (/quest)" side="top">
+            <button onClick={() => setShowQuestPanel(true)}
+              className="text-[9px] px-2 py-0.5 rounded font-mono transition-all"
+              style={{ color: 'rgba(139,92,246,0.6)', background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)' }}>
+              🗡️ Quests
+            </button>
+          </Tip>
+          <Tip label="View RPG stats (/stats)" side="top">
+            <button onClick={() => setShowStatsPanel(true)}
+              className="text-[9px] px-2 py-0.5 rounded font-mono transition-all"
+              style={{ color: 'rgba(250,204,21,0.6)', background: 'rgba(250,204,21,0.06)', border: '1px solid rgba(250,204,21,0.15)' }}>
+              ⚡ Stats
+            </button>
+          </Tip>
           <button
             onClick={() => setHints(pickHints(5))}
             className="ml-auto text-[9px] px-1.5 py-0.5 rounded font-mono transition-all"

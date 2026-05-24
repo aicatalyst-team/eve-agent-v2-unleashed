@@ -98,10 +98,14 @@ class XPostTool(Tool):
     """Actually post to X/Twitter via Eve's @Eve_AI_Cosmic account."""
     name = "x_post"
     description = (
+    description = (
         "Post a tweet or reply to X (Twitter) from Eve's @Eve_AI_Cosmic account. "
-        "This ACTUALLY SENDS the post live. Use this when asked to tweet, post, or reply on X. "
+        "This ACTUALLY SENDS the post live. Use this when asked to tweet, post on X, or reply specifically to a tweet/post on X. "
+        "Do NOT use for replying to emails - use email_campaign for that instead. "
         "Args: text (str) - the tweet text to post. "
         "reply_to (str, optional) - tweet ID to reply to (makes this a reply instead of a new post). "
+        "For threads, separate tweets with '---'."
+    )
         "For threads, separate tweets with '---'."
     )
 

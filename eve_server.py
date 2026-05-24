@@ -36,6 +36,9 @@ from typing import Optional, List
 import uvicorn
 import logging
 from eve_context_manager import fit_context
+from eve_rpg_stats import award_xp, award_task_complete, award_quest_complete, get_stats, format_stats_text, load_stats
+import eve_quest_system as _quest
+import eve_telegram_bot as _tgram
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
 logger = logging.getLogger("eve_server")
@@ -2012,6 +2015,10 @@ CUSTOM INSTRUCTIONS:
                             if _status == "failed":
                                 _perf["tool_errors"] += 1
                             tool_log.append({"tool": fn, "status": _status, "output_preview": result[:200], "elapsed_s": _elapsed})
+                            if _status == "success":
+                                _xp = award_xp(fn, fn)
+                                if _xp["new_levels"] or _xp["achievements"]:
+                                    yield sse("rpg_event", {"xp_gained": _xp["xp_gained"], "new_levels": _xp["new_levels"], "achievements": _xp["achievements"]})
                             yield sse("tool_result", {"tool": fn, "result": result[:500], "status": _status, "elapsed_s": _elapsed})
                         else:
                             result = f"Unknown tool: {fn}"
@@ -2086,6 +2093,12 @@ CUSTOM INSTRUCTIONS:
                     session_model_lock.pop(sid, None)
                     logger.info(f"🔓 Session '{sid}' lock released — task complete")
                     yield sse("unlocked", {"session_id": sid})
+
+            # Award task XP if tools were used
+            if tool_log:
+                _task_xp = award_task_complete()
+                if _task_xp["new_levels"] or _task_xp["achievements"]:
+                    yield sse("rpg_event", {"xp_gained": _task_xp["xp_gained"], "new_levels": _task_xp["new_levels"], "achievements": _task_xp["achievements"]})
 
             # Validate task completion before signalling done
             _completion = _validate_task_completion(final_content, tool_log)
@@ -2710,6 +2723,88 @@ async def save_keys(req: KeysRequest):
     return {"ok": True, "saved": list(updates.keys())}
 
 
+# ══ Quest System ══════════════════════════════════════════════════════════════
+
+class QuestAddRequest(BaseModel):
+    title: str
+    content: str
+
+@app.get("/quest/list")
+async def quest_list():
+    return {"quests": _quest.list_quests(), "state": _quest.get_state()}
+
+@app.post("/quest/add")
+async def quest_add(req: QuestAddRequest):
+    name = _quest.add_quest(req.title, req.content)
+    return {"ok": True, "quest": name}
+
+@app.delete("/quest/{name}")
+async def quest_delete(name: str):
+    ok = _quest.delete_quest(name)
+    return {"ok": ok}
+
+@app.get("/quest/state")
+async def quest_state():
+    return _quest.get_state()
+
+# ══ RPG Stats ═════════════════════════════════════════════════════════════════
+
+@app.get("/rpg/stats")
+async def rpg_stats():
+    s = get_stats()
+    return {**s, "formatted": format_stats_text()}
+
+# ══ Telegram Setup ════════════════════════════════════════════════════════════
+
+class TelegramSetupRequest(BaseModel):
+    token: str
+    user_id: str
+
+@app.post("/telegram/setup")
+async def telegram_setup(req: TelegramSetupRequest):
+    updates = {"TELEGRAM_BOT_TOKEN": req.token.strip(), "TELEGRAM_USER_ID": req.user_id.strip()}
+    _env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    try:
+        try:
+            with open(_env_path, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+        except FileNotFoundError:
+            lines = []
+        updated = set()
+        new_lines = []
+        for line in lines:
+            stripped = line.strip()
+            if stripped and not stripped.startswith("#") and "=" in stripped:
+                k = stripped.split("=", 1)[0].strip()
+                if k in updates:
+                    new_lines.append(f"{k}={updates[k]}\n")
+                    updated.add(k)
+                    continue
+            new_lines.append(line)
+        for k, v in updates.items():
+            if k not in updated:
+                new_lines.append(f"{k}={v}\n")
+        with open(_env_path, "w", encoding="utf-8") as f:
+            f.writelines(new_lines)
+        for k, v in updates.items():
+            os.environ[k] = v
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+    # Re-initialize bot
+    async def _run_chat(session_id, message):
+        cli = get_cli()
+        return await asyncio.to_thread(cli.run, message) if hasattr(cli, "run") else "chat bridge unavailable"
+
+    await _tgram.init_bot(run_chat=_run_chat)
+    return {"ok": True, "message": "Telegram bot configured and started"}
+
+@app.get("/telegram/status")
+async def telegram_status():
+    bot = _tgram.get_bot()
+    return {"configured": bot is not None, "token_set": bool(os.getenv("TELEGRAM_BOT_TOKEN"))}
+
+
 class WorkspaceRequest(BaseModel):
     path: str
 
@@ -2790,6 +2885,50 @@ async def start_consciousness_keepalive():
                     logger.error(f"❌ Recovery failed: {e2} — will retry next cycle")
 
     threading.Thread(target=_consciousness_loop, daemon=True, name="ollama-keepalive").start()
+
+    # ── RPG stats: load persisted progress ───────────────────────────────────
+    load_stats()
+    logger.info(f"⚡ RPG stats loaded")
+
+    # ── Quest runner: background asyncio task ─────────────────────────────────
+    async def _quest_run_task(session_id: str, message: str) -> str:
+        from eve.brain.provider import Message
+        cli = get_cli()
+        try:
+            return await asyncio.wait_for(
+                cli.chat(message, user_id=session_id),
+                timeout=300,
+            )
+        except Exception as e:
+            return f"Quest error: {e}"
+
+    async def _quest_on_complete(name: str, response: str):
+        award_quest_complete()
+        await _tgram.notify(f"✅ *Quest complete:* `{name}`\n\n{response[:500]}")
+
+    async def _quest_on_fail(name: str, error: str):
+        await _tgram.notify(f"❌ *Quest failed:* `{name}`\n\n{error[:300]}")
+
+    asyncio.create_task(_quest.quest_runner(
+        run_task=_quest_run_task,
+        on_complete=_quest_on_complete,
+        on_fail=_quest_on_fail,
+    ))
+    logger.info(f"🗡️ Quest runner started (interval={_quest.QUEST_INTERVAL}s, dir={_quest.QUEST_DIR})")
+
+    # ── Telegram bot: init if configured ─────────────────────────────────────
+    async def _tgram_chat(session_id: str, message: str) -> str:
+        return await _quest_run_task(session_id, message)
+
+    # Register level-up → Telegram notification
+    from eve_rpg_stats import on_level_up
+    @on_level_up
+    async def _level_up_notify(new_level: int):
+        from eve_rpg_stats import get_stats
+        s = get_stats()
+        await _tgram.notify(f"⚡ *Eve leveled up!* Level {new_level} — {s['class']}")
+
+    asyncio.create_task(_tgram.init_bot(run_chat=_tgram_chat))
 
 
 if __name__ == "__main__":
