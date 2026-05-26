@@ -179,6 +179,22 @@ def get_agent():
     return get_cli()
 
 
+_cmd_manager = None
+
+def get_command_manager():
+    global _cmd_manager
+    if _cmd_manager is None:
+        try:
+            from eve_unleashed.commands import CommandManager
+            _cmd_manager = CommandManager(project_dir=Path(_DEFAULT_WORKSPACE))
+            cnt = len(_cmd_manager.list_commands())
+            logger.info(f"CommandManager loaded: {cnt} commands/skills")
+        except Exception as e:
+            logger.warning(f"CommandManager unavailable: {e}")
+            _cmd_manager = False
+    return _cmd_manager if _cmd_manager is not False else None
+
+
 # ══ Models ══
 
 # ══ Model Routing ══
@@ -841,6 +857,21 @@ async def chat(req: ChatRequest):
     model_id = model_cfg.get("id", model_id)  # resolve alias → canonical Ollama name
     tool_log = []
 
+    # Expand slash commands from .claude/commands/
+    _raw_message = req.message.strip()
+    if _raw_message.startswith('/'):
+        _cmd_mgr = get_command_manager()
+        if _cmd_mgr:
+            _cmd_name = _raw_message.split()[0]
+            _cmd_args = _raw_message[len(_cmd_name):].strip()
+            _cmd_result = _cmd_mgr.execute_command(_cmd_name, _cmd_args)
+            if 'prompt' in _cmd_result:
+                if hasattr(req, 'model_copy'):
+                    req = req.model_copy(update={"message": _cmd_result['prompt']})
+                else:
+                    req.__dict__['message'] = _cmd_result['prompt']
+                logger.info(f"📋 Slash command '{_cmd_name}' expanded → {len(_cmd_result['prompt'])} chars")
+
     logger.info(f"🤖 V2U Chat → {model_id} ({model_cfg['role']})")
 
     # Build fresh Ollama client per request
@@ -1484,6 +1515,22 @@ async def chat_stream(req: ChatRequest):
             logger.info(f"🔒 Session '{_sid_for_routing}' locked to {model_id} (agentic task started)")
     model_cfg = _get_model_cfg(model_id)
     model_id = model_cfg.get("id", model_id)  # resolve alias → canonical Ollama name
+
+    # Expand slash commands from .claude/commands/
+    _raw_message_s = req.message.strip()
+    if _raw_message_s.startswith('/'):
+        _cmd_mgr_s = get_command_manager()
+        if _cmd_mgr_s:
+            _cmd_name_s = _raw_message_s.split()[0]
+            _cmd_args_s = _raw_message_s[len(_cmd_name_s):].strip()
+            _cmd_result_s = _cmd_mgr_s.execute_command(_cmd_name_s, _cmd_args_s)
+            if 'prompt' in _cmd_result_s:
+                if hasattr(req, 'model_copy'):
+                    req = req.model_copy(update={"message": _cmd_result_s['prompt']})
+                else:
+                    req.__dict__['message'] = _cmd_result_s['prompt']
+                logger.info(f"📋 Slash command '{_cmd_name_s}' expanded → {len(_cmd_result_s['prompt'])} chars")
+
     logger.info(f"🤖 V2U Stream → {model_id}")
 
     api_key = os.environ.get("OLLAMA_API_KEY", "")

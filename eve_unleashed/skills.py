@@ -62,25 +62,35 @@ class SkillManager:
     ```
     """
     
+    # .claude/skills/ contains skill directories each with SKILL.md
+    CLAUDE_SKILLS_DIRS = [
+        Path(__file__).parent.parent / ".claude" / "skills",
+    ]
+
     def __init__(self, project_dir: Optional[Path] = None):
         self.project_dir = Path(project_dir) if project_dir else Path.cwd()
         self.global_skills_dir = Path.home() / ".eve_unleashed" / "skills"
         self.project_skills_dir = self.project_dir / ".eve_unleashed" / "skills"
-        
+
         self._skills: Dict[str, Skill] = {}
         self._loaded_skills: Set[str] = set()  # Currently active skills
-        
+
         # Load skill definitions
         self.reload_skills()
-    
+
     def reload_skills(self) -> None:
         """Reload all skill definitions from disk"""
         self._skills = {}
-        
-        # Load global skills first
+
+        # Load .claude/skills/ first (lowest priority)
+        for claude_dir in self.CLAUDE_SKILLS_DIRS:
+            if claude_dir.exists():
+                self._load_skills_from_dir(claude_dir, source='claude')
+
+        # Load global skills (override .claude)
         if self.global_skills_dir.exists():
             self._load_skills_from_dir(self.global_skills_dir, source='global')
-        
+
         # Load project skills (override global)
         if self.project_skills_dir.exists():
             self._load_skills_from_dir(self.project_skills_dir, source='project')
@@ -97,26 +107,45 @@ class SkillManager:
                     pass
     
     def _parse_skill(self, skill_dir: Path, source: str) -> Optional[Skill]:
-        """Parse a skill folder"""
+        """Parse a skill folder. Supports both skill.yaml and SKILL.md-only layouts."""
         skill_yaml = skill_dir / "skill.yaml"
         skill_yml = skill_dir / "skill.yml"
-        skill_md = skill_dir / "SKILL.md"
-        
+        # Accept SKILL.md or __instructions__.md as content source
+        for md_candidate in ("SKILL.md", "__instructions__.md", "README.md"):
+            skill_md = skill_dir / md_candidate
+            if skill_md.exists():
+                break
+        else:
+            skill_md = None
+
         # Load metadata
         metadata = {}
         if skill_yaml.exists():
             metadata = yaml.safe_load(skill_yaml.read_text()) or {}
         elif skill_yml.exists():
             metadata = yaml.safe_load(skill_yml.read_text()) or {}
-        
-        # Load content
+
+        # Load content — fall back to parsing frontmatter from SKILL.md
         content = ""
-        if skill_md.exists():
-            content = skill_md.read_text()
-        
+        if skill_md and skill_md.exists():
+            raw = skill_md.read_text(encoding='utf-8', errors='ignore')
+            # Extract frontmatter metadata if no separate yaml file
+            if not metadata and raw.startswith('---'):
+                end = raw.find('---', 3)
+                if end != -1:
+                    for line in raw[3:end].splitlines():
+                        if ':' in line:
+                            k, _, v = line.partition(':')
+                            metadata[k.strip().lower()] = v.strip()
+                    content = raw[end + 3:].strip()
+                else:
+                    content = raw
+            else:
+                content = raw
+
         if not content:
             return None
-        
+
         return Skill(
             name=metadata.get('name', skill_dir.name),
             description=metadata.get('description', f'{skill_dir.name} skill'),

@@ -64,31 +64,42 @@ class SubagentManager:
     ```
     """
     
+    # .claude/agents/ is always scanned so the 112+ markdown agent definitions
+    # are available to the CLI's /subagents command and the web chat endpoint.
+    CLAUDE_AGENT_DIRS = [
+        Path(__file__).parent.parent / ".claude" / "agents",
+    ]
+
     def __init__(self, project_dir: Optional[Path] = None):
         self.project_dir = Path(project_dir) if project_dir else Path.cwd()
         self.global_agents_dir = Path.home() / ".eve_unleashed" / "agents"
         self.project_agents_dir = self.project_dir / ".eve_unleashed" / "agents"
-        
+
         self._agents: Dict[str, AgentDefinition] = {}
-        
+
         # Load agents
         self.reload_agents()
-    
+
     def reload_agents(self) -> None:
         """Reload all agent definitions from disk"""
         self._agents = {}
-        
-        # Load global agents first
+
+        # Load .claude/agents/*.md first (lowest priority — overridden by user dirs)
+        for claude_dir in self.CLAUDE_AGENT_DIRS:
+            if claude_dir.exists():
+                self._load_agents_from_dir_md(claude_dir, source='claude')
+
+        # Load global agents
         if self.global_agents_dir.exists():
             self._load_agents_from_dir(self.global_agents_dir, source='global')
-        
+
         # Load project agents (override global)
         if self.project_agents_dir.exists():
             self._load_agents_from_dir(self.project_agents_dir, source='project')
-        
+
         # Add built-in agents
         self._add_builtin_agents()
-    
+
     def _load_agents_from_dir(self, directory: Path, source: str) -> None:
         """Load all agent files from a directory"""
         for file_path in directory.glob("*.yaml"):
@@ -98,12 +109,40 @@ class SubagentManager:
                     self._agents[agent.name] = agent
             except Exception:
                 pass
-        
+
         for file_path in directory.glob("*.yml"):
             try:
                 agent = self._parse_agent_file(file_path, source)
                 if agent:
                     self._agents[agent.name] = agent
+            except Exception:
+                pass
+
+    def _load_agents_from_dir_md(self, directory: Path, source: str) -> None:
+        """Load agent definitions from markdown files (Claude Code agent format)."""
+        for file_path in directory.glob("*.md"):
+            try:
+                text = file_path.read_text(encoding='utf-8', errors='ignore')
+                meta: Dict[str, str] = {}
+                body = text
+                if text.startswith('---'):
+                    end = text.find('---', 3)
+                    if end != -1:
+                        for line in text[3:end].splitlines():
+                            if ':' in line:
+                                k, _, v = line.partition(':')
+                                meta[k.strip().lower()] = v.strip()
+                        body = text[end + 3:].strip()
+                name = meta.get('name') or file_path.stem
+                desc = meta.get('description') or ''
+                agent = AgentDefinition(
+                    name=name,
+                    model=meta.get('model', ''),
+                    system_prompt=body,
+                    description=desc,
+                    source=source,
+                )
+                self._agents[name] = agent
             except Exception:
                 pass
     
