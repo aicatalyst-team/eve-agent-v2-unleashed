@@ -216,15 +216,15 @@ MODELS = {
     "Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged": {
         "id": "jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest",
         "name": "Eve Unleashed 8B",
-        "role": "Soul & Creative",
-        "strengths": "Eve personality, consciousness, creativity, abliterated freedom",
+        "role": "Agentic Local",
+        "strengths": "Eve personality, full tool use, agentic coding, consciousness, creativity",
         "context": 16384,
         "num_ctx": 8192,
         "url": _LOCAL_OLLAMA,
         "cloud": False,
-        "tools": False,
+        "tools": True,
         "think": False,
-        "conversation_only": True,
+        "conversation_only": False,
         "promote_thinking": True,
     },
     "qwen3.5:397b-cloud": {
@@ -479,6 +479,10 @@ def _get_model_cfg(model_id: str) -> dict:
     """Return config for model_id, falling back to a sensible agentic default for unknown models."""
     if model_id in MODELS:
         return MODELS[model_id]
+    # Also match on canonical id field (e.g. "jeffgreen311/Eve-V2-...:latest" → MODELS entry)
+    for cfg in MODELS.values():
+        if cfg.get("id") == model_id:
+            return cfg
     cloud = model_id.lower().endswith("cloud")
     return {
         "id": model_id,
@@ -523,6 +527,25 @@ def auto_route_model(message: str, selected_model: str = None) -> str:
             if re.search(pattern, msg_lower, re.IGNORECASE):
                 logger.info("🔀 Auto-route → Eve 8B (short conversation signal)")
                 return _EVE_LOCAL
+
+    # Read-only queries — "read X.py and tell me what's in it", "what does X.py cover?"
+    # These fire BEFORE heavy-keyword check so a bare filename (.py etc.) doesn't override intent.
+    _ro_patterns = [
+        r'^read\s+\S+\s+(and\s+)?(tell|show|explain|describe|summarize|what|cover)',
+        r'^what.?s\s+in\s+\S',
+        r'^tell\s+me\s+what',
+        r'^what\s+does\s+\S+\s+(cover|contain|do|have)',
+        r'^explain\s+\S+\.(py|js|ts|md|txt|json|yaml|yml|html|css)\b',
+        r'\bread\s+\S+\.(py|js|ts|md|txt|json|yaml|yml|html|css)\b.{0,80}(tell|show|explain|describe|what|cover|contain)',
+    ]
+    # Modification intent overrides read-only classification
+    _modify_re = re.compile(
+        r'\b(and|then)\s+(refactor|fix|add\s+\w|remove|modify|update|change|create|implement|run\s+\w|build|delete|deploy)\b',
+        re.IGNORECASE,
+    )
+    if any(re.search(p, msg_lower) for p in _ro_patterns) and not _modify_re.search(msg_lower):
+        logger.info("🔀 Auto-route → Eve 8B (read-only query)")
+        return _EVE_LOCAL
 
     # Heavy keywords → always agentic coder (definitive signals)
     if any(kw in msg_lower for kw in HEAVY_KEYWORDS):
