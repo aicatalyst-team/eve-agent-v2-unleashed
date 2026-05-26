@@ -1266,8 +1266,8 @@ When the full task is complete, emit "result: [one-line summary]" on its own lin
         final_thinking = ""
         final_content = ""
 
-        # ALWAYS provide tools (except eve-unleashed which doesn't support them)
-        supports_tools = model_cfg.get("tools", False)
+        # ALWAYS provide tools (except models that don't support them)
+        supports_tools = model_cfg.get("tools", False) and model_id not in _runtime_no_tools
         max_rounds = 10 if supports_tools else 1
         MAX_LOOP_SECONDS = agent_settings.get("max_loop_seconds", 120)
         _loop_start = time.time()
@@ -1299,10 +1299,23 @@ When the full task is complete, emit "result: [one-line summary]" on its own lin
                 if model_cfg.get("think", False):
                     chat_kwargs["think"] = True
 
-            response: ChatResponse = await asyncio.to_thread(
-                client.chat,
-                **chat_kwargs,
-            )
+            try:
+                response: ChatResponse = await asyncio.to_thread(
+                    client.chat,
+                    **chat_kwargs,
+                )
+            except Exception as _chat_err:
+                if supports_tools and "does not support tools" in str(_chat_err).lower():
+                    logger.warning(f"  ⚠️  {model_id} rejected tools (400) — retrying without tools")
+                    supports_tools = False
+                    chat_kwargs.pop("tools", None)
+                    chat_kwargs.pop("think", None)
+                    response: ChatResponse = await asyncio.to_thread(
+                        client.chat,
+                        **chat_kwargs,
+                    )
+                else:
+                    raise
 
             msg = response.message
             if msg.thinking:
@@ -1372,7 +1385,7 @@ When the full task is complete, emit "result: [one-line summary]" on its own lin
                     session_model_lock[sid] = model_id
                     model_cfg = _get_model_cfg(model_id)
                     model_id = model_cfg.get("id", model_id)
-                    supports_tools = model_cfg.get("tools", False)
+                    supports_tools = model_cfg.get("tools", False) and model_id not in _runtime_no_tools
                     _api_key = os.environ.get("OLLAMA_API_KEY", "")
                     client = OllamaClient(
                         host=model_cfg["url"],
@@ -1507,6 +1520,9 @@ class _InlineThinkExtractor:
         return c, ""
 
 
+_runtime_no_tools: set = set()  # models that returned 400 "does not support tools" at runtime
+
+
 async def _iter_ollama_async(client, chat_kwargs: dict, sid: str):
     """Iterate a sync Ollama streaming response in a thread so the event loop
     stays free. Without this, each next(stream) call blocks the event loop and
@@ -1533,6 +1549,14 @@ async def _iter_ollama_async(client, chat_kwargs: dict, sid: str):
         if item is _DONE:
             return
         if isinstance(item, Exception):
+            if "does not support tools" in str(item).lower() and "tools" in chat_kwargs:
+                mid = chat_kwargs.get("model", "")
+                _runtime_no_tools.add(mid)
+                logger.warning(f"  ⚠️  {mid} rejected tools (400) — retrying without, caching for session")
+                fallback_kw = {k: v for k, v in chat_kwargs.items() if k not in ("tools", "think")}
+                async for chunk in _iter_ollama_async(client, fallback_kw, sid):
+                    yield chunk
+                return
             raise item
         yield item
 
@@ -1902,7 +1926,7 @@ async def chat_stream(req: ChatRequest):
 
     tools = [read_file, read_lines, write_file, insert_after_line, replace_lines, list_directory, bash, web_search, grep, find_file, glob, web_fetch]
     tool_map = {f.__name__: f for f in tools}
-    supports_tools = model_cfg.get("tools", False)
+    supports_tools = model_cfg.get("tools", False) and model_id not in _runtime_no_tools
 
     # Build system prompt
     if req.sub_agent:
