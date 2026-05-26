@@ -1369,6 +1369,12 @@ When the full task is complete, emit "result: [one-line summary]" on its own lin
                 session_model_lock.pop(sid, None)
                 logger.info(f"🔓 Session '{sid}' lock released — task complete")
 
+        # De-escalation: if the last N rounds were all trivial, release the 480B lock
+        # so the next request re-routes from local instead of staying on frontier rates
+        if _tracker.should_deescalate() and sid in session_model_lock:
+            session_model_lock.pop(sid, None)
+            logger.info(f"📉 Session '{sid}' lock released — de-escalation (trivial tail after 480B unblocked task)")
+
         # Detect mood
         mood = "neutral"
         if response_text:
