@@ -1296,8 +1296,7 @@ When the full task is complete, emit "result: [one-line summary]" on its own lin
             # Tool/think capability driven by model config flags
             if supports_tools:
                 chat_kwargs["tools"] = list(available_tools.values())
-                if model_cfg.get("think", False):
-                    chat_kwargs["think"] = True
+            chat_kwargs["think"] = bool(model_cfg.get("think", False))
 
             try:
                 response: ChatResponse = await asyncio.to_thread(
@@ -2149,12 +2148,11 @@ CUSTOM INSTRUCTIONS:
                 if opts:
                     ck["options"] = opts
                 _thinking_promoted = False  # reset each round
+                ck["think"] = bool(model_cfg.get("think", False))  # explicit False suppresses native thinking
                 # Tool/think from model config
                 if supports_tools:
                     ck["tools"] = tools
                     ck["stream"] = True
-                    if model_cfg.get("think", False):
-                        ck["think"] = True
 
                     # Stream thinking + content + tool_calls
                     thinking = ""
@@ -2205,8 +2203,6 @@ CUSTOM INSTRUCTIONS:
                 else:
                     # Streaming for conversation-only models too
                     ck["stream"] = True
-                    if model_cfg.get("think", False):
-                        ck["think"] = True
                     # GPU/CPU split
                     if model_cfg.get("num_gpu") is not None:
                         ck.setdefault("options", {})["num_gpu"] = model_cfg["num_gpu"]
