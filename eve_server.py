@@ -1293,7 +1293,7 @@ When the full task is complete, emit "result: [one-line summary]" on its own lin
         # ALWAYS provide tools (except models that don't support them)
         supports_tools = model_cfg.get("tools", False) and not _no_tools_active(model_id)
         max_rounds = 10 if supports_tools else 1
-        MAX_LOOP_SECONDS = agent_settings.get("max_loop_seconds", 120)
+        MAX_LOOP_SECONDS = agent_settings.get("max_loop_seconds", 120 if model_cfg.get("cloud") else 300)
         _loop_start = time.time()
         logger.info(f"  📋 Mode: {'AGENT (tools always available, {max_rounds} rounds)' if supports_tools else 'CONVERSATION'}")
 
@@ -1314,7 +1314,9 @@ When the full task is complete, emit "result: [one-line summary]" on its own lin
                 "repeat_penalty": 1.15,
                 "temperature": 0.75,
             }
-            chat_kwargs = {"model": model_id, "messages": messages}
+            _no_think = not model_cfg.get("think", True)
+            _send_msgs = _apply_no_think(messages) if _no_think else messages
+            chat_kwargs = {"model": model_id, "messages": _send_msgs}
             if _chat_opts:
                 chat_kwargs["options"] = _chat_opts
             # Tool/think capability driven by model config flags
@@ -1422,17 +1424,10 @@ When the full task is complete, emit "result: [one-line summary]" on its own lin
         # Strip leaked tags
         response_text = re.sub(r'</?(?:think|thinking|thought|emphasize|result|output|response|answer|reasoning|reflection|summary|context|plan|step|action|observation|note|tool_call|function_call)\s*/?>', '', final_content or "").strip()
 
-        # Auto-release model lock on task completion signals
+        # Release session lock after every completed task cycle
         if sid in session_model_lock:
-            if any(sig in response_text.lower() for sig in ("result:", "needs input:")):
-                session_model_lock.pop(sid, None)
-                logger.info(f"🔓 Session '{sid}' lock released — task complete")
-
-        # De-escalation: if the last N rounds were all trivial, release the 480B lock
-        # so the next request re-routes from local instead of staying on frontier rates
-        if _tracker.should_deescalate() and sid in session_model_lock:
             session_model_lock.pop(sid, None)
-            logger.info(f"📉 Session '{sid}' lock released — de-escalation (trivial tail after 480B unblocked task)")
+            logger.info(f"🔓 Session '{sid}' lock released — task complete")
 
         # Detect mood
         mood = "neutral"
@@ -1488,6 +1483,26 @@ async def models():
     return {"models": list(MODELS.values())}
 
 
+def _apply_no_think(msgs: list) -> list:
+    """Return a copy of msgs with '/no_think' appended to the last user message.
+
+    Qwen3 models respect this token regardless of the Ollama TEMPLATE override.
+    Using a copy avoids mutating the caller's session history.
+    """
+    if not msgs:
+        return msgs
+    copy = list(msgs)
+    for i in range(len(copy) - 1, -1, -1):
+        if copy[i].get("role") == "user":
+            entry = dict(copy[i])
+            content = entry.get("content") or ""
+            if "/no_think" not in content:
+                entry["content"] = content + " /no_think"
+            copy[i] = entry
+            break
+    return copy
+
+
 class _InlineThinkExtractor:
     """Split a streaming content feed into (content, thinking) by detecting
     inline <think>...</think> blocks.  Handles tags split across chunk boundaries."""
@@ -1530,6 +1545,16 @@ class _InlineThinkExtractor:
                 self._think_acc = ""
 
         return content_out, thinking_out
+
+    def drain_partial_thinking(self) -> str:
+        """Return and clear accumulated thinking content while still inside a <think> block.
+        Used by the heartbeat handler to stream thinking to the UI every few seconds instead
+        of holding it until </think> is found."""
+        if not self._in_think or not self._think_acc:
+            return ""
+        partial = self._think_acc
+        self._think_acc = ""
+        return partial
 
     def flush(self) -> tuple:
         """Flush remaining buffer at stream end."""
@@ -1581,22 +1606,53 @@ async def _iter_ollama_async(client, chat_kwargs: dict, sid: str):
         finally:
             loop.call_soon_threadsafe(q.put_nowait, _DONE)
 
-    threading.Thread(target=_producer, daemon=True).start()
-    while True:
-        item = await q.get()
-        if item is _DONE:
-            return
-        if isinstance(item, Exception):
-            if "does not support tools" in str(item).lower() and "tools" in chat_kwargs:
-                mid = chat_kwargs.get("model", "")
-                _runtime_no_tools[mid] = time.time()
-                logger.warning(f"  ⚠️  {mid} rejected tools (400) — retrying without (cache expires in {_NO_TOOLS_RETRY_AFTER}s)")
-                fallback_kw = {k: v for k, v in chat_kwargs.items() if k not in ("tools", "think")}
-                async for chunk in _iter_ollama_async(client, fallback_kw, sid):
-                    yield chunk
+    # Unlimited queue — producer must never be blocked by QueueFull.
+    # Heartbeats are injected by a concurrent asyncio task so the main consumer
+    # can use plain await q.get() which returns the moment any item arrives.
+    q_unlimited: asyncio.Queue = asyncio.Queue()
+    _t_start = time.time()
+    _HEARTBEAT = object()
+
+    async def _heartbeat_injector():
+        while True:
+            await asyncio.sleep(3.0)
+            q_unlimited.put_nowait({"_heartbeat": True, "elapsed": round(time.time() - _t_start)})
+
+    _hb_task = asyncio.ensure_future(_heartbeat_injector())
+
+    def _producer2():
+        try:
+            for chunk in client.chat(**chat_kwargs):
+                loop.call_soon_threadsafe(q_unlimited.put_nowait, chunk)
+                if session_cancel.get(sid):
+                    break
+        except Exception as exc:
+            loop.call_soon_threadsafe(q_unlimited.put_nowait, exc)
+        finally:
+            loop.call_soon_threadsafe(q_unlimited.put_nowait, _DONE)
+
+    threading.Thread(target=_producer2, daemon=True).start()
+    try:
+        while True:
+            item = await q_unlimited.get()
+            if item is _DONE:
                 return
-            raise item
-        yield item
+            if isinstance(item, dict) and "_heartbeat" in item:
+                yield item
+                continue
+            if isinstance(item, Exception):
+                if "does not support tools" in str(item).lower() and "tools" in chat_kwargs:
+                    mid = chat_kwargs.get("model", "")
+                    _runtime_no_tools[mid] = time.time()
+                    logger.warning(f"  ⚠️  {mid} rejected tools (400) — retrying without (cache expires in {_NO_TOOLS_RETRY_AFTER}s)")
+                    fallback_kw = {k: v for k, v in chat_kwargs.items() if k not in ("tools", "think")}
+                    async for chunk in _iter_ollama_async(client, fallback_kw, sid):
+                        yield chunk
+                    return
+                raise item
+            yield item
+    finally:
+        _hb_task.cancel()
 
 
 @app.post("/chat/stream")
@@ -2184,7 +2240,8 @@ CUSTOM INSTRUCTIONS:
                     }
                     if model_cfg.get("num_gpu") is not None:
                         opts["num_gpu"] = model_cfg["num_gpu"]
-                ck = {"model": model_id, "messages": msgs}
+                _no_think = not model_cfg.get("think", True)
+                ck = {"model": model_id, "messages": _apply_no_think(msgs) if _no_think else msgs}
                 if opts:
                     ck["options"] = opts
                 _thinking_promoted = False  # reset each round
@@ -2202,6 +2259,9 @@ CUSTOM INSTRUCTIONS:
 
                     _stopped = False
                     async for chunk in _iter_ollama_async(client, ck, sid):
+                        if isinstance(chunk, dict) and "_heartbeat" in chunk:
+                            yield sse("working", {"status": "thinking", "elapsed": chunk["elapsed"]})
+                            continue
                         if session_cancel.get(sid):
                             session_cancel.pop(sid, None)
                             yield sse("stopped", {"message": "Task stopped by user.", "round": rnd})
@@ -2253,6 +2313,9 @@ CUSTOM INSTRUCTIONS:
                     _think_extractor = _InlineThinkExtractor()
                     _stopped = False
                     async for chunk in _iter_ollama_async(client, ck, sid):
+                        if isinstance(chunk, dict) and "_heartbeat" in chunk:
+                            yield sse("working", {"status": "thinking", "elapsed": chunk["elapsed"]})
+                            continue
                         if session_cancel.get(sid):
                             session_cancel.pop(sid, None)
                             yield sse("stopped", {"message": "Task stopped by user.", "round": rnd})
@@ -2505,12 +2568,13 @@ CUSTOM INSTRUCTIONS:
                 if len(v2u_sessions[sid]) > V2U_MAX_HISTORY:
                     v2u_sessions[sid] = v2u_sessions[sid][-V2U_MAX_HISTORY:]
 
-            # Auto-release model lock on task completion signals
-            if sid in session_model_lock and final_content:
-                if any(sig in final_content.lower() for sig in ("result:", "needs input:")):
-                    session_model_lock.pop(sid, None)
-                    logger.info(f"🔓 Session '{sid}' lock released — task complete")
-                    yield sse("unlocked", {"session_id": sid})
+            # Release session lock after every completed task cycle so the next
+            # message re-routes fresh.  auto_route will re-lock if the next
+            # request is another agentic/coding task.
+            if sid in session_model_lock:
+                session_model_lock.pop(sid, None)
+                logger.info(f"🔓 Session '{sid}' lock released — task complete")
+                yield sse("unlocked", {"session_id": sid})
 
             # Award task XP if tools were used
             if tool_log:
@@ -3272,7 +3336,17 @@ async def start_consciousness_keepalive():
 
         # Resolve which model to keep warm — prefer the configured default,
         # fall back to the first model Ollama actually has pulled.
-        _preferred = os.getenv("OLLAMA_MODEL", "eve-unleashed")
+        _preferred_alias = os.getenv("OLLAMA_MODEL", "eve-unleashed")
+        # Resolve alias → canonical Ollama ID via MODELS registry
+        _preferred = _get_model_cfg(_preferred_alias).get("id", _preferred_alias)
+        if _preferred == _preferred_alias:
+            # Alias id field is still the alias (not a full Ollama tag) — find the
+            # first local tool-capable model's canonical ID instead
+            _preferred = next(
+                (cfg["id"] for cfg in MODELS.values()
+                 if not cfg.get("cloud") and cfg.get("tools") and "id" in cfg),
+                _preferred_alias,
+            )
         try:
             _c = _OC(host=host)
             _available = [m.model for m in _c.list().models]
