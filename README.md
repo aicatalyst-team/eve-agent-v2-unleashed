@@ -3,11 +3,10 @@
 <img src="web/assets/eve_v2u_logo.png" width="220" alt="Eve V2 Unleashed" />
 
 # ◈ EVE AGENT V2 UNLEASHED ◈
-
-### Local-first autonomous AI coding agent — powered by Ollama
-
-**No accounts. No cloud lock-in. No limits.**  
-Run a 480B-parameter agentic coding engine on your own machine.
+### Local soul. Cloud muscle. 40-round autonomous loop.
+Your GPU runs the personality. Qwen3 Coder 480B handles agentic heavy lifting via Ollama cloud.
+Mid-loop complexity escalation — local model drives until the task needs frontier power.
+No accounts. No telemetry. No per-token surprises.
 
 [![GitHub Stars](https://img.shields.io/github/stars/JeffGreen311/eve-agent-v2-unleashed?style=for-the-badge&color=00ff41&labelColor=0c0c1a)](https://github.com/JeffGreen311/eve-agent-v2-unleashed/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-00ffff?style=for-the-badge&labelColor=0c0c1a)](LICENSE)
