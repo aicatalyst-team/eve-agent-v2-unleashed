@@ -409,7 +409,9 @@ HEAVY_KEYWORDS = [
     "improve", "upgrade", "enhance", "refactor", "optimize",
     "take from", "use this", "use the", "from the repo", "from this repo",
     "system prompt", "tool calling", "agentic",
-    ".py", ".js", ".ts", ".html", ".css",  # file extension mentions
+    # NOTE: file extensions (.py, .js, etc.) intentionally NOT here.
+    # A filename in a message could be read-only ("read utils.py") — the
+    # read-only short-circuit and AGENTIC patterns below handle the distinction.
 ]
 
 # Context-aware: tasks that need more output than 4B's 8K context can handle
@@ -461,8 +463,8 @@ AGENTIC_CODING_PATTERNS = [
     # Structured code generation with scope
     r'\b(create|build|write|implement|develop)\b.{0,30}\b(full|complete|entire)\b.{0,30}\b(app|application|project|system|server|api|backend|frontend)\b',
     r'\b(class|function|module|api|endpoint|service|controller|handler|middleware)\b.{0,40}\b(with|that|which|to)\b',
-    # File extension mentions (strong signal: user is talking about code files)
-    r'\.(py|js|ts|html|css|json|yaml|yml|sh|bat|sql|cfg|ini|toml)\b',
+    # NOTE: bare file-extension patterns removed — "utils.py" in a read request
+    # is NOT a coding task.  File-write intent is caught by the verb patterns above.
 ]
 
 # Strong negative signals — pure conversation that should NOT go to the coder
@@ -503,9 +505,11 @@ def _get_model_cfg(model_id: str) -> dict:
 def auto_route_model(message: str, selected_model: str = None) -> str:
     """Context-aware routing with confidence scoring.
 
-    qwen3-coder:480b-cloud (256K):  ALL tool/coding/agentic tasks — only model with tools
-    qwen3.5:397b-cloud (262K):      ONLY when explicitly selected (deep reasoning/conversation)
-    Eve 3.5 4B Merged / Eve 8B:     Pure conversation, creativity, philosophy
+    Eve 8B (default):               Read/explain/summarize tasks, conversation, single-file queries.
+                                    Now has full tool support — handles most tasks locally.
+    qwen3-coder:480b-cloud (256K):  Multi-file edits, create-from-scratch, complex refactors,
+                                    large-context tasks, explicit agentic workflows.
+    qwen3.5:397b-cloud (262K):      Only when explicitly selected.
     """
     import re
 
@@ -528,22 +532,42 @@ def auto_route_model(message: str, selected_model: str = None) -> str:
                 logger.info("🔀 Auto-route → Eve 8B (short conversation signal)")
                 return _EVE_LOCAL
 
-    # Read-only queries — "read X.py and tell me what's in it", "what does X.py cover?"
-    # These fire BEFORE heavy-keyword check so a bare filename (.py etc.) doesn't override intent.
+    # Read-only guard: messages that START with an action verb are always coding tasks.
+    # This prevents "Add X to utils.py" from being mis-classified as read-only.
+    _write_start_re = re.compile(
+        r'^(add|create|write|modify|update|edit|fix|refactor|implement|build|remove|delete|move|rename|run|execute|deploy|generate|install|init|setup|scaffold)\b',
+        re.IGNORECASE,
+    )
+
+    # Read-only queries — these fire BEFORE heavy-keyword check so a bare
+    # filename (.py etc.) doesn't override the user's actual intent.
     _ro_patterns = [
+        # "read utils.py and tell / show / explain / summarize"
         r'^read\s+\S+\s+(and\s+)?(tell|show|explain|describe|summarize|what|cover)',
+        # "Read utils.py, read config.json, and give me a summary"
+        # (.{0,200} catches the multi-file "read X, read Y, ...give me" form)
+        r'^read\b.{0,200}(tell|show|explain|describe|summarize|summarise|summary|give\s+me)',
+        # "Read a file called fake_file.py" — filename not immediately after "read"
+        r'^read\s+(a\s+)?(file\s*(called\s*)?)?\S+\.(py|js|ts|md|txt|json|yaml|yml|html|css)\b',
+        # "what's in utils.py?", "tell me what", "what does X cover?"
         r'^what.?s\s+in\s+\S',
         r'^tell\s+me\s+what',
         r'^what\s+does\s+\S+\s+(cover|contain|do|have)',
+        # "explain utils.py"
         r'^explain\s+\S+\.(py|js|ts|md|txt|json|yaml|yml|html|css)\b',
+        # "...read utils.py...and tell/explain..."
         r'\bread\s+\S+\.(py|js|ts|md|txt|json|yaml|yml|html|css)\b.{0,80}(tell|show|explain|describe|what|cover|contain)',
     ]
-    # Modification intent overrides read-only classification
+    # Modification intent anywhere in the message overrides read-only classification
     _modify_re = re.compile(
         r'\b(and|then)\s+(refactor|fix|add\s+\w|remove|modify|update|change|create|implement|run\s+\w|build|delete|deploy)\b',
         re.IGNORECASE,
     )
-    if any(re.search(p, msg_lower) for p in _ro_patterns) and not _modify_re.search(msg_lower):
+    if (
+        not _write_start_re.search(msg_lower)
+        and any(re.search(p, msg_lower) for p in _ro_patterns)
+        and not _modify_re.search(msg_lower)
+    ):
         logger.info("🔀 Auto-route → Eve 8B (read-only query)")
         return _EVE_LOCAL
 
