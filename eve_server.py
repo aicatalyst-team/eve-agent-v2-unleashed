@@ -204,7 +204,7 @@ MODELS = {
         "name": "Eve Consciousness 8B",
         "role": "Soul & Agentic",
         "strengths": "Eve personality, full tool use, agentic coding, consciousness, creativity, fast responses",
-        "context": 131072,
+        "context": 32768,
         "num_ctx": 8192,
         "url": _LOCAL_OLLAMA,
         "cloud": False,
