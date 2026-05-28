@@ -55,6 +55,7 @@ Eve: [reads project] → [plans approach] → [writes 6 files] →
 | 📱 | **Telegram Bridge** | Push notifications and mobile chat with Eve |
 | 🪟 | **Windows Native** | PowerShell-aware bash tool, one-click `.bat` launcher |
 | 🎨 | **Cyberpunk UI** | Animated robot avatar, Eve face panel, streaming terminal — no build step |
+| 👁️ | **Computer Vision** | Screenshot, OCR screen analysis, and full GUI interaction (click, type, hotkeys) via OpenClaw |
 
 ---
 
@@ -342,6 +343,16 @@ pip install python-telegram-bot
 
 ---
 
+## 🧠 Intelligence Improvements (v2.3)
+
+- **Computer vision tool suite** (`eve_computer_vision_tools.py`) — three new tools wired into Eve's agentic loop via OpenClaw's computer-use capabilities:
+  - `eve_take_screenshot` — capture full screen or any region; returns base64 PNG for vision model analysis
+  - `eve_analyze_screen_content` — OCR (pytesseract) + OpenCV contour detection → extracts text, UI element bounding boxes, screen dimensions, and dominant colors
+  - `eve_gui_interaction` — mouse move/click/double-click/right-click, `type_text`, `key_press`, and `key_combination` (hotkeys)
+- Tools load conditionally — if `pyautogui`/`opencv-python`/`Pillow` aren't installed, Eve starts normally without them. Install with `pip install pyautogui opencv-python pillow pytesseract`.
+
+---
+
 ## 🧠 Intelligence Improvements (v2.2)
 
 - **Mid-loop complexity escalation** (`eve_complexity_tracker.py`) — per-round delta gating escalates from 8B → 480B only when complexity is *rising* across consecutive rounds, not when it crosses an absolute threshold. Avoids burning cloud tokens on the normal first-round burst.
@@ -372,6 +383,7 @@ pip install python-telegram-bot
 - [x] 8B model native Qwen3.5 tool calling via RENDERER/PARSER (v2.2)
 - [x] Ollama 400 graceful tools fallback with `_runtime_no_tools` cache (v2.2)
 - [x] ComplexityTracker test suite — 14 unit tests (v2.2)
+- [x] Computer vision tools — screenshot, screen analysis, GUI interaction via OpenClaw (v2.3)
 - [ ] **Voice input / TTS output**
 - [ ] **Multi-file project context awareness** (auto-load OLLAMA.md)
 - [ ] **Plugin marketplace** for community-built tools
@@ -396,6 +408,7 @@ eve-agent-v2-unleashed/
 ├── eve_quest_system.py        # Background quest runner — watches workspace/quests/
 ├── eve_rpg_stats.py           # XP, leveling, achievements, persistence
 ├── eve_telegram_bot.py        # Telegram bot bridge and notification pusher
+├── eve_computer_vision_tools.py # OpenClaw CV tools — screenshot, screen analysis, GUI interaction
 ├── ChatPanel.jsx              # React UI — streaming chat, tooltips, quest/stats panels
 ├── eve/                       # Eve's brain
 │   ├── brain/                 # LLM provider adapters
@@ -447,6 +460,9 @@ Call Ollama with tools enabled ──► stream chunks to browser via SSE
 | `web_search` | Live Tavily web search |
 | `fetch_url` | Fetch and parse a URL |
 | `think` | Structured reasoning scratch pad |
+| `eve_take_screenshot` | Capture full screen or a region → base64 PNG for vision analysis |
+| `eve_analyze_screen_content` | OCR + OpenCV contour detection → text, UI elements, layout, colors |
+| `eve_gui_interaction` | Mouse move/click/double-click/right-click, type text, key press, key combos |
 
 ---
 

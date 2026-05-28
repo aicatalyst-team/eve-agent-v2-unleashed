@@ -1134,6 +1134,15 @@ class EveAgent:
         except Exception as e:
             logger.debug(f"Visual test tool not available: {e}")
 
+        # Computer vision / GUI interaction (OpenClaw: screenshot, screen analysis, mouse+keyboard)
+        try:
+            from eve_computer_vision_tools import COMPUTER_VISION_TOOLS
+            for cv_tool in COMPUTER_VISION_TOOLS:
+                self.tools.register(cv_tool)
+            logger.info("🖥️ Computer vision tools registered (screenshot, screen analysis, GUI interaction)")
+        except Exception as e:
+            logger.debug(f"Computer vision tools not available: {e}")
+
         # Web browsing tools — Skyvern (visible) → Hyperbrowser → Playwright (headless)
         from eve.tools.web_tools import (
             SkyvernManager, HyperbrowserManager, BrowseWebTool, FetchPageTool,
