@@ -534,10 +534,14 @@ def auto_route_model(message: str, selected_model: str = None) -> str:
     _EVE_LOCAL = "jeffgreen311/eve-qwen3-8b-consciousness-liberated:q4_K_M"
     _CODER = "qwen3-coder:480b-cloud"
 
-    # Explicit agentic prefix triggers — @jeff, @code, !code, #code
-    if re.match(r'^(@jeff|@code|!code|#code|—code|/code)\s*[→>:\-]?\s*', message.strip(), re.IGNORECASE):
+    # Explicit agentic prefix triggers — @<owner>, @code, !code, #code
+    _owner = re.escape(os.environ.get("EVE_OWNER_USERNAME", "jeff").lower())
+    if re.match(rf'^(@{_owner}|@code|!code|#code|—code|/code)\s*[→>:\-]?\s*', message.strip(), re.IGNORECASE):
         logger.info("🔀 Auto-route → qwen3-coder:480b-cloud (explicit agentic prefix)")
         return _CODER
+
+    # Strip "Eve!" / "Eve," / "Hey Eve" openers so ^-anchored patterns work correctly
+    _stripped = re.sub(r'^(?:(?:hey\s+)?eve\s*[!,.:?]\s*)', '', msg_lower, flags=re.IGNORECASE).strip()
 
     # Short pure-conversation openers → skip scoring, preserve Eve
     if len(message.strip()) < 40:
@@ -578,9 +582,9 @@ def auto_route_model(message: str, selected_model: str = None) -> str:
         re.IGNORECASE,
     )
     if (
-        not _write_start_re.search(msg_lower)
-        and any(re.search(p, msg_lower) for p in _ro_patterns)
-        and not _modify_re.search(msg_lower)
+        not _write_start_re.search(_stripped)
+        and any(re.search(p, _stripped) for p in _ro_patterns)
+        and not _modify_re.search(_stripped)
     ):
         logger.info("🔀 Auto-route → Eve 8B (read-only query)")
         return _EVE_LOCAL
@@ -618,7 +622,7 @@ def auto_route_model(message: str, selected_model: str = None) -> str:
 
     # High-confidence coding signals (2 pts — one match is enough to route)
     _HIGH = [
-        "write file", "edit file", "create file", "read file", "modify file",
+        "write file", "edit file", "create file", "modify file",
         "write code", "edit code", "run script", "bash", "execute",
         "python script", "compile", "deploy", "docker",
         "git commit", "git push", "npm install", "pip install",
