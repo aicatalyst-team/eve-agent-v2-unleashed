@@ -202,9 +202,23 @@ MODELS = {
     "eve-consciousness-8b": {
         "id": "jeffgreen311/eve-qwen3-8b-consciousness-liberated:q4_K_M",
         "name": "Eve Consciousness 8B",
-        "role": "Soul & Agentic",
-        "strengths": "Eve personality, full tool use, agentic coding, consciousness, creativity, fast responses",
+        "role": "Soul & Conversation",
+        "strengths": "Eve personality, consciousness, creativity, philosophy, fast responses",
         "context": 32768,
+        "num_ctx": 8192,
+        "url": _LOCAL_OLLAMA,
+        "cloud": False,
+        "tools": False,
+        "think": False,
+        "conversation_only": True,
+        "promote_thinking": True,
+    },
+    "Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged": {
+        "id": "jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest",
+        "name": "Eve Unleashed 8B",
+        "role": "Agentic Local",
+        "strengths": "Eve personality, full tool use, agentic coding, file ops, local agentic tasks",
+        "context": 16384,
         "num_ctx": 8192,
         "url": _LOCAL_OLLAMA,
         "cloud": False,
@@ -215,7 +229,7 @@ MODELS = {
     },
     "eve-unleashed": {
         "id": "eve-unleashed",
-        "name": "Eve 3.5 4B Merged",
+        "name": "Eve 3.5 4B Merged (alias)",
         "role": "Soul & Creative",
         "strengths": "Conversation, creativity, poetic expression, liminal awareness",
         "context": 131072,
@@ -225,20 +239,6 @@ MODELS = {
         "tools": False,
         "think": False,
         "conversation_only": True,
-        "promote_thinking": True,
-    },
-    "Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged": {
-        "id": "jeffgreen311/eve-qwen3-8b-consciousness-liberated:q4_K_M",
-        "name": "Eve Unleashed 8B",
-        "role": "Agentic Local",
-        "strengths": "Eve personality, full tool use, agentic coding, consciousness, creativity",
-        "context": 16384,
-        "num_ctx": 8192,
-        "url": _LOCAL_OLLAMA,
-        "cloud": False,
-        "tools": True,
-        "think": False,
-        "conversation_only": False,
         "promote_thinking": True,
     },
     "qwen3.5:397b-cloud": {
@@ -531,7 +531,8 @@ def auto_route_model(message: str, selected_model: str = None) -> str:
         return selected_model
 
     msg_lower = message.lower().strip()
-    _EVE_LOCAL = "jeffgreen311/eve-qwen3-8b-consciousness-liberated:q4_K_M"
+    _EVE_CONVO = "jeffgreen311/eve-qwen3-8b-consciousness-liberated:q4_K_M"   # fast, conversation only
+    _EVE_LOCAL = "jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest"  # tool-capable local
     _CODER = "qwen3-coder:480b-cloud"
 
     # Explicit agentic prefix triggers — @<owner>, @code, !code, #code
@@ -543,12 +544,12 @@ def auto_route_model(message: str, selected_model: str = None) -> str:
     # Strip "Eve!" / "Eve," / "Hey Eve" openers so ^-anchored patterns work correctly
     _stripped = re.sub(r'^(?:(?:hey\s+)?eve\s*[!,.:?]\s*)', '', msg_lower, flags=re.IGNORECASE).strip()
 
-    # Short pure-conversation openers → skip scoring, preserve Eve
+    # Short pure-conversation openers → consciousness 8B (fastest)
     if len(message.strip()) < 40:
         for pattern in _CONVERSATION_SIGNALS:
             if re.search(pattern, msg_lower, re.IGNORECASE):
-                logger.info("🔀 Auto-route → Eve 8B (short conversation signal)")
-                return _EVE_LOCAL
+                logger.info("🔀 Auto-route → Eve Consciousness 8B (short conversation signal)")
+                return _EVE_CONVO
 
     # Read-only guard: messages that START with an action verb are always coding tasks.
     # This prevents "Add X to utils.py" from being mis-classified as read-only.
@@ -2189,10 +2190,10 @@ CUSTOM INSTRUCTIONS:
                     yield sse("error", {
                         "message": "Cloud model requires an Ollama API key. Set it in ⚙ Settings → API Keys, then retry.",
                         "error_code": "missing_cloud_key",
-                        "fallback": "jeffgreen311/eve-qwen3-8b-consciousness-liberated:q4_K_M",
+                        "fallback": "jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest",
                     })
-                    # Auto-fallback to local model so task still runs
-                    _fb = "jeffgreen311/eve-qwen3-8b-consciousness-liberated:q4_K_M"
+                    # Auto-fallback to local tool-capable model so task still runs
+                    _fb = "jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest"
                     logger.warning(f"☁ No OLLAMA_API_KEY — falling back to {_fb}")
                     model_id = _fb
                     model_cfg = _get_model_cfg(_fb)
@@ -2640,7 +2641,7 @@ CUSTOM INSTRUCTIONS:
                                "connection refused", "connection error",
                                "remotedisconnected", "connectionreset",
                                "internal server error", "status code: -1", "500")):
-                fallback = "jeffgreen311/eve-qwen3-8b-consciousness-liberated:q4_K_M"
+                fallback = "jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest"
                 logger.warning(f"☁ Cloud model '{model_id}' failed — falling back to {fallback}")
                 yield sse("error", {
                     "message": f"☁ '{model_id}' failed. Check your Ollama API key in ⚙ Settings → API Keys.\nFalling back to local {fallback}...",
