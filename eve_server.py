@@ -2836,6 +2836,27 @@ async def status():
     }
 
 
+@app.post("/debug/clear-tools-cache")
+async def clear_tools_cache():
+    """Clear the _runtime_no_tools rejection cache so tools are retried immediately."""
+    cleared = list(_runtime_no_tools.keys())
+    _runtime_no_tools.clear()
+    logger.info(f"🔧 Tools cache cleared manually: {cleared}")
+    return {"cleared": cleared, "message": "Tool rejection cache cleared — tools will be retried on next request."}
+
+
+@app.get("/debug/tools-cache")
+async def tools_cache_status():
+    """Show which models are currently blocked from tool use."""
+    now = time.time()
+    return {
+        "blocked": {
+            mid: f"expires in {max(0, int(_NO_TOOLS_RETRY_AFTER - (now - ts)))}s"
+            for mid, ts in _runtime_no_tools.items()
+        }
+    }
+
+
 @app.get("/stats")
 async def stats():
     cpu = psutil.cpu_percent(interval=0)
