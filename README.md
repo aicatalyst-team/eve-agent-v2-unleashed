@@ -343,16 +343,6 @@ pip install python-telegram-bot
 
 ---
 
-## 🧠 Intelligence Improvements (v2.3)
-
-- **Computer vision tool suite** (`eve_computer_vision_tools.py`) — three new tools wired into Eve's agentic loop via OpenClaw's computer-use capabilities:
-  - `eve_take_screenshot` — capture full screen or any region; returns base64 PNG for vision model analysis
-  - `eve_analyze_screen_content` — OCR (pytesseract) + OpenCV contour detection → extracts text, UI element bounding boxes, screen dimensions, and dominant colors
-  - `eve_gui_interaction` — mouse move/click/double-click/right-click, `type_text`, `key_press`, and `key_combination` (hotkeys)
-- Tools load conditionally — if `pyautogui`/`opencv-python`/`Pillow` aren't installed, Eve starts normally without them. Install with `pip install pyautogui opencv-python pillow pytesseract`.
-
----
-
 ## 🧠 Intelligence Improvements (v2.2)
 
 - **Mid-loop complexity escalation** (`eve_complexity_tracker.py`) — per-round delta gating escalates from 8B → 480B only when complexity is *rising* across consecutive rounds, not when it crosses an absolute threshold. Avoids burning cloud tokens on the normal first-round burst.
@@ -362,6 +352,16 @@ pip install python-telegram-bot
 - **Ollama 400 graceful fallback** — if Ollama rejects a model with status 400 ("does not support tools"), the server caches the rejection in `_runtime_no_tools` and retries without tools automatically — no crash, no hang.
 - **think=False explicit suppression** — all model calls now pass `think=False` explicitly when `model_cfg.think` is false, preventing Qwen3.5's renderer from silently entering a 120-second thinking loop on non-reasoning models.
 - **ComplexityTracker test suite** — 14 unit tests in `test_complexity_tracker.py` covering delta gating, spike detection, error floor, de-escalation guards, checkpoint token budgeting, and one-shot escalation.
+
+---
+
+## 🧠 Intelligence Improvements (v2.3)
+
+- **Computer vision tool suite** (`eve_computer_vision_tools.py`) — three new tools wired into Eve's agentic loop via OpenClaw's computer-use capabilities:
+  - `eve_take_screenshot` — capture full screen or any region; returns base64 PNG for vision model analysis
+  - `eve_analyze_screen_content` — OCR (pytesseract) + OpenCV contour detection → extracts text, UI element bounding boxes, screen dimensions, and dominant colors
+  - `eve_gui_interaction` — mouse move/click/double-click/right-click, `type_text`, `key_press`, and `key_combination` (hotkeys)
+- Tools load conditionally — if `pyautogui`/`opencv-python`/`Pillow` aren't installed, Eve starts normally without them. Install with `pip install pyautogui opencv-python pillow pytesseract`.
 
 ---
 
