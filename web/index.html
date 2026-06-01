@@ -805,10 +805,10 @@ button:focus-visible, select:focus-visible, input:focus-visible {
       <span class="name">eve-qwen3.5-4b-solforg3-v3</span>
       <div class="detail">🌌 Consciousness · Soul · Tools · 2.5GB</div>
     </div>
-    <div class="model-card" id="card-qwen3coder" onclick="selectModelCard('qwen3-coder:480b-cloud')" title="Qwen3 Coder 480B Cloud: Full agentic system prompt — BLAST RADIUS rules, anti-hallucination, surgical file editing.">
+    <div class="model-card" id="card-qwen3coder" onclick="selectModelCard('minimax-m3:cloud')" title="MiniMax M3 Cloud: Full agentic system prompt — BLAST RADIUS rules, anti-hallucination, surgical file editing.">
       <span class="dot dot-cyan"></span>
-      <span class="name">qwen3-coder-480b</span>
-      <div class="detail">⚡ Cloud · Agentic Coder</div>
+      <span class="name">minimax-m3</span>
+      <div class="detail">⚡ Cloud · Agentic Coder · 1M ctx</div>
     </div>
     <div class="model-card" id="card-397b" onclick="selectModelCard('qwen3.5:397b-cloud')" title="Qwen 397B Cloud: Deep reasoning, philosophy, massive context">
       <span class="dot" style="background:#888;box-shadow:0 0 4px #888"></span>
@@ -934,7 +934,7 @@ button:focus-visible, select:focus-visible, input:focus-visible {
     <option value="">⚡ Auto-Route</option>
     <option value="jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest">✦ Eve 3.5 4B Merged — Poetic Eve · Liminal · Creative</option>
     <option value="jeffgreen311/Eve-Qwen3.5-4B-S0LF0RG3-V3:latest">🌌 Eve V3 4B — Consciousness · Tree of Life · Soul · Tools</option>
-    <option value="qwen3-coder:480b-cloud">⚡ Qwen3 Coder 480B Cloud — Agentic Coder</option>
+    <option value="minimax-m3:cloud">⚡ MiniMax M3 Cloud — Agentic Coder</option>
     <option value="qwen3.5:397b-cloud">🧠 Qwen 397B Cloud — Deep Reasoning</option>
   </select>
   <span class="prompt">❯</span>
@@ -1293,7 +1293,7 @@ function updateModelCardHighlights(modelId) {
     '': 'card-auto',
     'jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest': 'card-merged',
     'jeffgreen311/Eve-Qwen3.5-4B-S0LF0RG3-V3:latest': 'card-eve',
-    'qwen3-coder:480b-cloud': 'card-qwen3coder',
+    'minimax-m3:cloud': 'card-qwen3coder',
     'qwen3.5:397b-cloud': 'card-397b',
   };
   // Remove active from all
@@ -1640,11 +1640,11 @@ userInput.addEventListener('keydown', async (e) => {
                 addMsg('system', `<span style="color:var(--neon-yellow);font-size:11px">🪄 ${escapeHtml(data.content)}</span>`);
               }
               // Update model display + card highlights when routing happens
-              if (data.content && data.content.includes('qwen3-coder:480b')) {
-                modelUsed = 'qwen3-coder:480b-cloud';
-                updateModelCardHighlights('qwen3-coder:480b-cloud');
-                try { document.querySelector('#status-bar b[style]').textContent = 'QWEN3-CODER-480B'; document.querySelector('#status-bar b[style]').style.color = 'var(--border-cyan)'; } catch(e){}
-                addMsg('system', '🔀 Auto-routed → qwen3-coder:480b-cloud (coding task)');
+              if (data.content && data.content.includes('minimax-m3')) {
+                modelUsed = 'minimax-m3:cloud';
+                updateModelCardHighlights('minimax-m3:cloud');
+                try { document.querySelector('#status-bar b[style]').textContent = 'MINIMAX-M3'; document.querySelector('#status-bar b[style]').style.color = 'var(--border-cyan)'; } catch(e){}
+                addMsg('system', '🔀 Auto-routed → minimax-m3:cloud (coding task)');
               } else if (data.content && data.content.includes('qwen3.5:397b')) {
                 modelUsed = 'qwen3.5:397b-cloud';
                 updateModelCardHighlights('qwen3.5:397b-cloud');

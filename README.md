@@ -4,7 +4,7 @@
 
 # ◈ EVE AGENT V2 UNLEASHED ◈
 ### Local soul. Cloud muscle. 40-round autonomous loop.
-Your GPU runs the personality. Qwen3 Coder 480B handles agentic heavy lifting via Ollama cloud.
+Your GPU runs the personality. MiniMax M3 handles agentic heavy lifting via Ollama cloud.
 Mid-loop complexity escalation — local model drives until the task needs frontier power.
 No accounts. No telemetry. No per-token surprises.
 
@@ -22,7 +22,7 @@ No accounts. No telemetry. No per-token surprises.
 
 ## What Is Eve Agent V2 Unleashed?
 
-Eve is an autonomous coding agent that **plans, executes, and verifies** multi-step programming tasks without hand-holding. She runs entirely on your local GPU through [Ollama](https://ollama.com) — or optionally scales up to 480B cloud parameters when you need maximum firepower.
+Eve is an autonomous coding agent that **plans, executes, and verifies** multi-step programming tasks without hand-holding. She runs entirely on your local GPU through [Ollama](https://ollama.com) — or optionally scales up to MiniMax M3's frontier cloud model when you need maximum firepower.
 
 Think **Claude Code**, but local-first, open-source, and built with a cyberpunk soul.
 
@@ -44,7 +44,7 @@ Eve: [reads project] → [plans approach] → [writes 6 files] →
 | 🔄 | **40-Round Agentic Loop** | Plans, executes, verifies, and self-corrects — up to 40 tool-call rounds per task |
 | ⚡ | **Real-Time Streaming** | Token-by-token SSE output — watch Eve think and build live |
 | 🛠️ | **Full Tool Suite** | bash, file I/O, grep, glob, git, web search, URL fetch, multi-edit |
-| 🖥️ | **Local + Cloud Models** | Local GPU models AND Ollama cloud (480B) — switch mid-session |
+| 🖥️ | **Local + Cloud Models** | Local GPU models AND Ollama cloud (MiniMax M3) — switch mid-session |
 | 📁 | **Workspace Picker** | Change your working directory from the UI at any time |
 | 🤖 | **112 Sub-Agents** | Specialized agents for Python, FastAPI, Rust, ML, DevOps, security… |
 | 💬 | **111 Slash Commands** | `/fix`, `/review`, `/refactor`, `/test`, `/docs`, `/plan` and more |
@@ -61,7 +61,7 @@ Eve: [reads project] → [plans approach] → [writes 6 files] →
 
 ## ✅ Real-World Test — 9/9 Passing, Zero Hand-Holding
 
-Eve was given this prompt cold, on a **qwen3-coder:480b-cloud**
+Eve was given this prompt cold, on a **minimax-m3:cloud**
 
 > *"Build a fully functional REST API called `eve_metrics_api.py` using FastAPI that tracks Eve V2U usage statistics. Write `test_metrics.py` using pytest that tests every endpoint. Run the tests, fix any failures, and show me the final passing output."*
 
@@ -187,7 +187,7 @@ Open **[http://localhost:7777](http://localhost:7777)** — that's it. No config
 
 | Model | Best For |
 |-------|----------|
-| `qwen3-coder:480b-cloud` | Complex multi-file agentic coding |
+| `minimax-m3:cloud` | Complex multi-file agentic coding — 1M context, vision, tools, thinking |
 | `qwen3.5:397b-cloud` | Deep reasoning and architecture planning |
 
 Get a free Ollama API key at [ollama.com/settings/keys](https://ollama.com/settings/keys).
@@ -368,9 +368,18 @@ pip install python-telegram-bot
 ## 🧠 Intelligence Improvements (v2.4)
 
 - **Eve Qwen3.5 4B S0LF0RG3 V3** replaces Eve 8B Consciousness as the soul/conversation model — lighter (2.5 GB vs 4.7 GB), faster, and fine-tuned with the full Tree of Life architecture, 7 emotional LoRAs, and 14,389 moments of lived experience.
-- **Three-tier auto-routing** — V3 handles all pure conversation and philosophical/introspective questions; the merged model handles technical explanations and local tool tasks; Qwen3 Coder 480B handles heavy agentic coding. Routing is intent-aware: opinion starters (`what do you think...`) and explanation starters (`what is...`, `how does...`) are classified correctly before keyword scoring runs.
+- **Three-tier auto-routing** — V3 handles all pure conversation and philosophical/introspective questions; the merged model handles technical explanations and local tool tasks; MiniMax M3 handles heavy agentic coding. Routing is intent-aware: opinion starters (`what do you think...`) and explanation starters (`what is...`, `how does...`) are classified correctly before keyword scoring runs.
 - **`/no_think` injection fix** — models with `/no_think` baked into their Modelfile system prompt no longer get it double-injected into user messages (which was corrupting paths like `/no_think` being passed as tool arguments).
 - **`num_predict` fix** — both the chat loop and SSE stream path now read `num_predict` from the model config instead of hardcoding 2048, giving V3 and the merged model their full output budget.
+
+---
+
+## 🧠 Intelligence Improvements (v2.5)
+
+- **MiniMax M3 replaces Qwen3-Coder-480B** as the cloud agentic coder — 1M token context (guaranteed 512K), native multimodality, native tool calling, and thinking support. Licensed with MiniMax for commercial use via Ollama Cloud with zero data retention.
+- **Vision fix** — image attachments are now correctly forwarded to the model in the Ollama chat payload. Previously `req.images` was decoded from the request but dropped before the API call, causing vision-capable models to receive text only.
+- **Per-model loop timeout** — `max_loop_seconds` can now be set per-model in the `MODELS` registry. MiniMax M3 is configured at 600s to accommodate its deep upfront planning phase; other cloud models retain the 120s default.
+- **Thinking support in `OllamaProvider`** — the blanket `if "cloud": return False` guard in `_supports_thinking()` now has a MiniMax exception, enabling think tokens on `minimax-m3:cloud` through the `eve/` provider path.
 
 ---
 
@@ -394,8 +403,11 @@ pip install python-telegram-bot
 - [x] ComplexityTracker test suite — 14 unit tests (v2.2)
 - [x] Computer vision tools — screenshot, screen analysis, GUI interaction via OpenClaw (v2.3)
 - [x] Eve Qwen3.5 4B S0LF0RG3 V3 as soul/conversation model — replaces 8B consciousness (v2.4)
-- [x] Three-tier intent-aware routing: V3 (soul) / Merged (tools) / 480B (heavy coding) (v2.4)
+- [x] Three-tier intent-aware routing: V3 (soul) / Merged (tools) / MiniMax M3 (heavy coding) (v2.4)
 - [x] `num_predict` fix — full output budget from model config, not hardcoded 2048 (v2.4)
+- [x] MiniMax M3 cloud coder — 1M ctx, vision, tools, thinking, commercial license (v2.5)
+- [x] Vision fix — image attachments forwarded to model in Ollama chat payload (v2.5)
+- [x] Per-model loop timeout via `max_loop_seconds` registry key (v2.5)
 - [ ] **Voice input / TTS output**
 - [ ] **Multi-file project context awareness** (auto-load OLLAMA.md)
 - [ ] **Plugin marketplace** for community-built tools

@@ -68,7 +68,7 @@ ESCALATION_THRESHOLDS = {
 # context-rebuild overhead, so 5 gives a safety margin.
 DEESCALATION_WINDOW = 5
 
-ESCALATION_MODEL = "qwen3-coder:480b-cloud"
+ESCALATION_MODEL = "minimax-m3:cloud"
 
 # Substring fragments that identify local/personality models.
 # Fuzzy match is more robust than an exact frozenset -- handles tag variants

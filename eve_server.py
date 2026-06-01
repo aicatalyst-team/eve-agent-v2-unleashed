@@ -259,24 +259,25 @@ MODELS = {
         "conversation_only": False,
         "promote_thinking": True,
     },
-    "qwen3-coder:480b-cloud": {
-        "id": "qwen3-coder:480b-cloud",
-        "name": "Qwen3 Coder 480B Cloud",
+    "minimax-m3:cloud": {
+        "id": "minimax-m3:cloud",
+        "name": "MiniMax M3 Cloud",
         "role": "Agentic Coder",
-        "strengths": "Coding, reasoning, tool use, long-form generation",
-        "context": 131072,
-        "num_ctx": 32768,
+        "strengths": "Coding, reasoning, tool use, long-form generation, 512K context",
+        "context": 524288,
+        "num_ctx": 65536,
         "url": "https://ollama.com",
         "cloud": True,
         "tools": True,
-        "think": True,   # separate <think> tokens from response content
+        "think": True,
         "conversation_only": False,
         "promote_thinking": False,
+        "max_loop_seconds": 600,
     },
 }
 
 # ══ Per-model system prompts ══════════════════════════════════════════════════
-# qwen3-coder:480b-cloud and qwen3.5:397b-cloud are NOT listed here —
+# minimax-m3:cloud and qwen3.5:397b-cloud are NOT listed here —
 # they fall through to the full agentic system prompt built inline in each endpoint.
 
 _PROMPT_EVE_UNLEASHED = """\
@@ -377,11 +378,11 @@ MODEL_SYSTEM_PROMPTS: dict = {
     "jeffgreen311/Eve-Qwen3.5-4B-S0LF0RG3-V3:latest":                       _PROMPT_EVE_UNLEASHED,
     "Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged":                   _PROMPT_MERGED,
     "jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest": _PROMPT_MERGED,
-    # qwen3-coder:480b-cloud → agentic prompt (built inline)
+    # minimax-m3:cloud → agentic prompt (built inline)
     # qwen3.5:397b-cloud    → agentic prompt (built inline)
 }
 
-# Auto-route keywords — anything needing TOOLS goes to qwen3-coder:480b-cloud
+# Auto-route keywords — anything needing TOOLS goes to minimax-m3:cloud
 # local Eve models have NO tool calling support — conversation only
 # Tightened: explicit file/code operations only — no vague conversational matches
 TOOL_KEYWORDS = [
@@ -446,7 +447,7 @@ LARGE_OUTPUT_PATTERNS = [
     r'\bwrite\b.*\b(full|complete|entire|script|code|program)\b',  # "write a script"
     r'\bimplement\b.*\b(full|complete|entire)\b',# "implement the full..."
     r'\bfull\s*stack\b',                         # "full stack" anything
-    # Any coding language mention with generation intent → qwen3-coder:480b-cloud
+    # Any coding language mention with generation intent → minimax-m3:cloud
     r'\b(python|javascript|typescript|rust|go|java|c\+\+|csharp|ruby|php|swift|kotlin|dart|scala|html|css|react|vue|angular|node|flask|django|fastapi|express)\b.*\b(script|code|file|class|function|module|app|project|program|api)\b',
     r'\b(script|code|file|class|function|module|app|project|program|api|component|endpoint|server|client|service|handler|controller|middleware|route)\b.*\b(python|javascript|typescript|rust|go|java|c\+\+|csharp|ruby|php|swift|kotlin|dart|scala|react|vue|angular|node|flask|django|fastapi|express)\b',
     r'\b(in|using|with|via)\s+(python|javascript|typescript|rust|go|java|c\+\+|csharp|ruby|php|swift|kotlin|dart|scala|react|vue|angular|node|flask|django|fastapi|express)\b',  # "in Python", "using JavaScript", "made in Rust"
@@ -512,7 +513,7 @@ def _get_model_cfg(model_id: str) -> dict:
         "num_ctx": 8192,
         "url": "https://ollama.com" if cloud else _LOCAL_OLLAMA,
         "cloud": cloud,
-        "tools": False,          # default safe — only qwen3-coder:480b-cloud has tools
+        "tools": False,          # default safe — only minimax-m3:cloud has tools
         "think": False,
         "conversation_only": False,
         "promote_thinking": False,
@@ -524,7 +525,7 @@ def auto_route_model(message: str, selected_model: str = None) -> str:
 
     Eve 8B (default):               Read/explain/summarize tasks, conversation, single-file queries.
                                     Now has full tool support — handles most tasks locally.
-    qwen3-coder:480b-cloud (256K):  Multi-file edits, create-from-scratch, complex refactors,
+    minimax-m3:cloud (256K):  Multi-file edits, create-from-scratch, complex refactors,
                                     large-context tasks, explicit agentic workflows.
     qwen3.5:397b-cloud (262K):      Only when explicitly selected.
     """
@@ -536,12 +537,12 @@ def auto_route_model(message: str, selected_model: str = None) -> str:
     msg_lower = message.lower().strip()
     _EVE_CONVO = "jeffgreen311/Eve-Qwen3.5-4B-S0LF0RG3-V3:latest"                      # conversation only
     _EVE_LOCAL = "jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest"  # tool-capable local
-    _CODER = "qwen3-coder:480b-cloud"
+    _CODER = "minimax-m3:cloud"
 
     # Explicit agentic prefix triggers — @<owner>, @code, !code, #code
     _owner = re.escape(os.environ.get("EVE_OWNER_USERNAME", "jeff").lower())
     if re.match(rf'^(@{_owner}|@code|!code|#code|—code|/code)\s*[→>:\-]?\s*', message.strip(), re.IGNORECASE):
-        logger.info("🔀 Auto-route → qwen3-coder:480b-cloud (explicit agentic prefix)")
+        logger.info("🔀 Auto-route → minimax-m3:cloud (explicit agentic prefix)")
         return _CODER
 
     # Strip "Eve!" / "Eve," / "Hey Eve" openers so ^-anchored patterns work correctly
@@ -636,30 +637,30 @@ def auto_route_model(message: str, selected_model: str = None) -> str:
 
     # Heavy keywords → always agentic coder (definitive signals)
     if any(kw in msg_lower for kw in HEAVY_KEYWORDS):
-        logger.info("🔀 Auto-route → qwen3-coder:480b-cloud (heavy keyword)")
+        logger.info("🔀 Auto-route → minimax-m3:cloud (heavy keyword)")
         return _CODER
 
     # Agentic coding patterns (regex) → always agentic coder
     for pattern in AGENTIC_CODING_PATTERNS:
         if re.search(pattern, msg_lower, re.IGNORECASE):
-            logger.info(f"🔀 Auto-route → qwen3-coder:480b-cloud (agentic pattern: {pattern[:50]})")
+            logger.info(f"🔀 Auto-route → minimax-m3:cloud (agentic pattern: {pattern[:50]})")
             return _CODER
 
     # Large output / coding patterns → agentic coder
     for pattern in LARGE_OUTPUT_PATTERNS:
         if re.search(pattern, msg_lower):
-            logger.info(f"🔀 Auto-route → qwen3-coder:480b-cloud (coding pattern: {pattern[:50]})")
+            logger.info(f"🔀 Auto-route → minimax-m3:cloud (coding pattern: {pattern[:50]})")
             return _CODER
 
     # Explicit line count requests (e.g. "generate 100 lines")
     line_match = re.search(r'(\d+)\s*(lines?|rows?)', msg_lower)
     if line_match and int(line_match.group(1)) > 30:
-        logger.info(f"🔀 Auto-route → qwen3-coder:480b-cloud ({line_match.group(1)} lines requested)")
+        logger.info(f"🔀 Auto-route → minimax-m3:cloud ({line_match.group(1)} lines requested)")
         return _CODER
 
     # Tightened keyword check — explicit file/tool ops
     if any(kw in msg_lower for kw in TOOL_KEYWORDS):
-        logger.info("🔀 Auto-route → qwen3-coder:480b-cloud (tool keyword)")
+        logger.info("🔀 Auto-route → minimax-m3:cloud (tool keyword)")
         return _CODER
 
     # ── Scoring system for ambiguous cases ──────────────────────────────────
@@ -737,7 +738,7 @@ def auto_route_model(message: str, selected_model: str = None) -> str:
         score += 1.5
 
     if score >= 1.5:
-        logger.info(f"🔀 Auto-route → qwen3-coder:480b-cloud (score: {score:.1f})")
+        logger.info(f"🔀 Auto-route → minimax-m3:cloud (score: {score:.1f})")
         return _CODER
 
     # No coding/tool signal detected → V3 for conversation
@@ -980,12 +981,12 @@ async def chat(req: ChatRequest):
         model_id = session_model_lock[sid]
         logger.info(f"🔒 Session '{sid}' continuing on locked model: {model_id}")
     elif req.has_attachment:
-        model_id = "qwen3-coder:480b-cloud"
+        model_id = "minimax-m3:cloud"
         session_model_lock[sid] = model_id
         logger.info(f"🔒 Session '{sid}' locked to {model_id} (file attached)")
     else:
         model_id = auto_route_model(req.message, req.model)
-        if model_id == "qwen3-coder:480b-cloud":
+        if model_id == "minimax-m3:cloud":
             session_model_lock[sid] = model_id
             logger.info(f"🔒 Session '{sid}' locked to {model_id} (agentic task started)")
     model_cfg = _get_model_cfg(model_id)
@@ -1362,7 +1363,10 @@ When the full task is complete, emit "result: [one-line summary]" on its own lin
     # (sid already resolved above for model routing)
 
     # Add user message to session history
-    v2u_sessions[sid].append({"role": "user", "content": req.message})
+    _user_msg: dict = {"role": "user", "content": req.message}
+    if req.images:
+        _user_msg["images"] = req.images
+    v2u_sessions[sid].append(_user_msg)
 
     # Trim to last N messages
     if len(v2u_sessions[sid]) > V2U_MAX_HISTORY:
@@ -1381,7 +1385,7 @@ When the full task is complete, emit "result: [one-line summary]" on its own lin
         # ALWAYS provide tools (except models that don't support them)
         supports_tools = model_cfg.get("tools", False) and not _no_tools_active(model_id)
         max_rounds = 10 if supports_tools else 1
-        _default_max_s = 120 if model_cfg.get("cloud") else 300
+        _default_max_s = model_cfg.get("max_loop_seconds") or (120 if model_cfg.get("cloud") else 300)
         MAX_LOOP_SECONDS = agent_settings.get("max_loop_seconds") or _default_max_s
         _loop_start = time.time()
         logger.info(f"  📋 Mode: {'AGENT (tools always available, {max_rounds} rounds)' if supports_tools else 'CONVERSATION'}")
@@ -1762,7 +1766,7 @@ async def chat_stream(req: ChatRequest):
             session_model_lock[_sid_for_routing] = model_id
     elif req.has_attachment:
         # File attached — pin session to agentic coder (large context, tool-calling)
-        model_id = "qwen3-coder:480b-cloud"
+        model_id = "minimax-m3:cloud"
         session_model_lock[_sid_for_routing] = model_id
         logger.info(f"🤖 V2U Stream → {model_id} (file attached, session pinned)")
     elif _sid_for_routing in session_model_lock and not should_bypass_lock(req.message):
@@ -1772,7 +1776,7 @@ async def chat_stream(req: ChatRequest):
     else:
         model_id = auto_route_model(req.message, req.model)
         # Lock session if auto-routed to the agentic coder
-        if model_id == "qwen3-coder:480b-cloud" and not req.sub_agent:
+        if model_id == "minimax-m3:cloud" and not req.sub_agent:
             session_model_lock[_sid_for_routing] = model_id
             logger.info(f"🔒 Session '{_sid_for_routing}' locked to {model_id} (agentic task started)")
     model_cfg = _get_model_cfg(model_id)
@@ -2213,7 +2217,10 @@ CUSTOM INSTRUCTIONS:
     clean_message = _qwen_re.sub('', req.message).strip() if req.message else req.message
 
     # Append current user message to session BEFORE building context
-    v2u_sessions[sid].append({"role": "user", "content": clean_message})
+    _user_msg_s: dict = {"role": "user", "content": clean_message}
+    if req.images:
+        _user_msg_s["images"] = req.images
+    v2u_sessions[sid].append(_user_msg_s)
     if len(v2u_sessions[sid]) > V2U_MAX_HISTORY:
         v2u_sessions[sid] = v2u_sessions[sid][-V2U_MAX_HISTORY:]
     logger.info(f"  📜 Session '{sid}': {len(v2u_sessions[sid])} messages in context")
@@ -2296,7 +2303,7 @@ CUSTOM INSTRUCTIONS:
             if sid in session_model_lock and session_model_lock[sid] != (req.model or ""):
                 yield sse("session_continuing", {"model": model_id})
 
-            _default_max_s = 120 if model_cfg.get("cloud") else 300  # local models get more time
+            _default_max_s = model_cfg.get("max_loop_seconds") or (120 if model_cfg.get("cloud") else 300)
             _stream_max_s = agent_settings.get("max_loop_seconds") or _default_max_s
             for rnd in range(40 if supports_tools else 1):
                 _perf["rounds"] += 1

@@ -462,10 +462,10 @@ class OllamaProvider(LLMProvider):
         # Other Eve fine-tunes on old templates do NOT support thinking
         if ("eve-" in model_lower or "eve2" in model_lower) and "unleashed" not in model_lower:
             return False
-        if "cloud" in model_lower:
+        if "cloud" in model_lower and "minimax" not in model_lower:
             return False
         # Known thinking-capable base models
-        thinking_models = ["qwen3:", "qwen3.", "qwen3-", "deepseek-r1", "deepseek-v3", "gpt-oss"]
+        thinking_models = ["qwen3:", "qwen3.", "qwen3-", "deepseek-r1", "deepseek-v3", "gpt-oss", "minimax"]
         return any(m in model_lower for m in thinking_models)
 
     def _format_messages(self, messages: List[Message], system_prompt: str) -> List[Dict]:

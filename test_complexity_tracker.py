@@ -305,7 +305,7 @@ def test_is_local_model_fuzzy():
     assert _is_local_model("jeffgreen311/Eve-V2-Unleashed-Qwen3.5-8B-Liberated-4K-4B-Merged:latest")
     assert _is_local_model("jeffgreen311/eve-qwen3-8b-consciousness-liberated:q4_K_M")
     assert _is_local_model("eve-unleashed")
-    assert not _is_local_model("qwen3-coder:480b-cloud")
+    assert not _is_local_model("minimax-m3:cloud")
     assert not _is_local_model("gpt-4o")
     assert not _is_local_model("anthropic/claude-3-sonnet")
     print("PASS  fuzzy local-model matching works correctly")

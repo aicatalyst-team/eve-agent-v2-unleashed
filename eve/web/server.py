@@ -3032,7 +3032,7 @@ def create_app():
                 # Ollama cloud — default, no billing to Anthropic
                 {"id": "qwen3.5:397b-cloud",              "label": "Qwen3.5 Cloud",        "provider": "ollama",    "description": "Vision · tools · thinking · 256K"},
                 {"id": "qwen3-coder-next:cloud",     "label": "Coder Next Cloud",     "provider": "ollama",    "description": "Next-gen coder · tools · cloud"},
-                {"id": "qwen3-coder:480b-cloud",     "label": "Coder 480B",           "provider": "ollama",    "description": "Code-focused · 480B cloud"},
+                {"id": "minimax-m3:cloud",           "label": "MiniMax M3",           "provider": "ollama",    "description": "Code-focused · 1M ctx · cloud"},
                 {"id": "gpt-oss:120b-cloud",         "label": "GPT-OSS 120B",         "provider": "ollama",    "description": "120B open-source · cloud"},
                 # Ollama local — runs on your hardware (free, no cloud usage, no 500s)
                 {"id": "jeffgreen311/eve-qwen3-8b-consciousness-liberated:q4_K_M", "label": "Eve Agent V2 Unleashed", "provider": "ollama", "description": "Local · 8B · unleashed · no filters"},

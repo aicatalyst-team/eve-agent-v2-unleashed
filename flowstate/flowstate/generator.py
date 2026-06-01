@@ -187,7 +187,7 @@ class CodeGenerator:
     
     def __init__(self):
         # Get model from environment variable or use default
-        self.model = os.getenv('OLLAMA_MODEL', 'qwen3-coder:480b-cloud')
+        self.model = os.getenv('OLLAMA_MODEL', 'minimax-m3:cloud')
         
     def generate_workflow_code(self, workflow_data: Dict[str, Any]) -> str:
         """Generate Python code for the entire workflow."""
