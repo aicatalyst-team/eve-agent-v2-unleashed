@@ -1,0 +1,15 @@
+.git
+.claude/
+.openclaw-agent/
+ollama-coder/
+flowstate/
+asciivision/
+docs/
+production/
+__pycache__/
+*.pyc
+.venv/
+.env
+*.bat
+*.ps1
+.github/

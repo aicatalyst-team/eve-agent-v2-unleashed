@@ -1,0 +1,56 @@
+FROM registry.access.redhat.com/ubi9/python-312
+
+WORKDIR /opt/app-root/src
+
+# Install system dependencies needed by some Python packages
+USER 0
+RUN dnf install -y gcc python3-devel && dnf clean all
+
+# Create a minimal requirements file for the core server
+# Skip heavy/problematic deps: playwright, solders, solana, tradingagents, pyautogui, opencv
+COPY pyproject.toml ./
+RUN python3 -c "
+import re
+content = open('pyproject.toml').read()
+# Extract dependencies from the dependencies array
+deps_match = re.search(r'dependencies\s*=\s*\[(.*?)\]', content, re.DOTALL)
+if deps_match:
+    deps_raw = deps_match.group(1)
+    deps = re.findall(r'\"([^\"]+)\"', deps_raw)
+    skip = ['playwright', 'solders', 'solana', 'tradingagents', 'pyautogui', 'opencv', 'flowstate']
+    filtered = [d for d in deps if not any(s in d.lower() for s in skip)]
+    with open('requirements-poc.txt', 'w') as f:
+        for d in filtered:
+            # Skip git+ dependencies
+            if 'git+' not in d and '@' not in d:
+                f.write(d + '\n')
+print('Generated requirements-poc.txt')
+"
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements-poc.txt
+
+# Copy application source
+COPY eve_server.py agent.py run.py ./
+COPY eve/ ./eve/
+COPY eve_unleashed/ ./eve_unleashed/
+COPY web/ ./web/
+COPY .env.example ./.env
+COPY eve_tool_router.py eve_complexity_tracker.py eve_context_manager.py eve_task_context.py \
+     eve_quest_system.py eve_rpg_stats.py eve_bash_safety.py eve_computer_vision_tools.py \
+     eve_generate_image_tool.py eve_telegram_bot.py file_tools.py shell_tools.py \
+     ChatPanel.jsx ./
+
+# Set environment defaults for containerized deployment
+ENV OLLAMA_BASE_URL=http://ollama:11434 \
+    EVE_DEFAULT_PROVIDER=ollama \
+    EVE_WORKSPACE=/opt/app-root/src \
+    PYTHONPATH=/opt/app-root/src
+
+# OpenShift compatibility
+RUN chgrp -R 0 /opt/app-root && chmod -R g=u /opt/app-root
+USER 1001
+
+EXPOSE 7777
+
+CMD ["python", "eve_server.py"]
