@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eve-agent
+  namespace: poc-eve-agent-v2-unleashed
+  labels:
+    app: eve-agent
+    autopoc.io/project: eve-agent-v2-unleashed
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: eve-agent
+  template:
+    metadata:
+      labels:
+        app: eve-agent
+    spec:
+      imagePullSecrets:
+        - name: quay-pull-secret
+      containers:
+        - name: eve-agent
+          image: quay.io/aicatalyst/eve-agent-v2-unleashed:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 7777
+          env:
+            - name: OLLAMA_BASE_URL
+              value: "http://localhost:11434"
+            - name: EVE_DEFAULT_PROVIDER
+              value: "ollama"
+            - name: EVE_IN_DOCKER
+              value: "1"
+            - name: EVE_WORKSPACE
+              value: "/opt/app-root/src"
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          readinessProbe:
+            httpGet:
+              path: /status
+              port: 7777
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: eve-agent
+  namespace: poc-eve-agent-v2-unleashed
+  labels:
+    app: eve-agent
+    autopoc.io/project: eve-agent-v2-unleashed
+spec:
+  type: ClusterIP
+  selector:
+    app: eve-agent
+  ports:
+    - port: 7777
+      targetPort: 7777

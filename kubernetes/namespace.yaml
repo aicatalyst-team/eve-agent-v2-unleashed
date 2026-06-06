@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: poc-eve-agent-v2-unleashed
+  labels:
+    app.kubernetes.io/name: eve-agent-v2-unleashed
+    app.kubernetes.io/managed-by: autopoc
